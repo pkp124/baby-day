@@ -74,6 +74,10 @@ export function LanCard() {
         <div className="stack" style={{ marginTop: 12 }}>
           <p className="muted">Show this to the first phone.</p>
           {lan.answerQr ? <img className="qr" src={lan.answerQr} alt="Answer QR code" /> : null}
+          <label className="field">
+            Answer code
+            <textarea readOnly value={lan.answerText} rows={3} />
+          </label>
           <button
             className="secondary"
             type="button"
