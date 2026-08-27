@@ -10,6 +10,7 @@ This repository is just getting started. Product thinking lives in `docs/`.
 
 - [Idea and plan](docs/idea-and-plan.md) — original product, architecture, and roadmap
 - [Plan review](docs/plan-review.md) — what holds up, what to tighten before building
+- [Hosting and backend](docs/hosting-and-backend.md) — Supabase vs GitHub-only, remaining blind spots
 
 ## Status
 

@@ -2,6 +2,8 @@
 
 This is a review of [the original idea and plan](./idea-and-plan.md). Verdict first, then what to keep, what to tighten, and what to add before building.
 
+Hosting follow-up (Supabase vs GitHub-only, remaining blind spots): [Hosting and backend](./hosting-and-backend.md).
+
 ## Verdict
 
 **The plan makes sense.** The product thesis is the right one: this should not compete with Huckleberry, Glow, or Baby Tracker on charts and coaching. It should be a **shared handover layer** so neither parent has to ask “did he already eat?”
@@ -258,7 +260,8 @@ baby-day/
 ├── README.md
 ├── docs/
 │   ├── idea-and-plan.md
-│   └── plan-review.md
+│   ├── plan-review.md
+│   └── hosting-and-backend.md
 ├── src/
 ├── public/          # manifest, icons
 ├── supabase/
