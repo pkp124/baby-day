@@ -98,32 +98,16 @@ export function SettingsPage({
           <input defaultValue={settings.timezone} onBlur={(e) => saveSettings({ timezone: e.target.value.trim() })} />
         </label>
         <div className="row">
-          <button
-            className={`secondary ${settings.volumeUnit === "ml" ? "primary" : ""}`}
-            type="button"
-            onClick={() => saveSettings({ volumeUnit: "ml" })}
-          >
+          <button className={settings.volumeUnit === "ml" ? "primary" : "secondary"} type="button" onClick={() => saveSettings({ volumeUnit: "ml" })}>
             ml
           </button>
-          <button
-            className={`secondary ${settings.volumeUnit === "oz" ? "primary" : ""}`}
-            type="button"
-            onClick={() => saveSettings({ volumeUnit: "oz" })}
-          >
+          <button className={settings.volumeUnit === "oz" ? "primary" : "secondary"} type="button" onClick={() => saveSettings({ volumeUnit: "oz" })}>
             oz
           </button>
-          <button
-            className={`secondary ${settings.weightUnit === "kg" ? "primary" : ""}`}
-            type="button"
-            onClick={() => saveSettings({ weightUnit: "kg" })}
-          >
+          <button className={settings.weightUnit === "kg" ? "primary" : "secondary"} type="button" onClick={() => saveSettings({ weightUnit: "kg" })}>
             kg
           </button>
-          <button
-            className={`secondary ${settings.weightUnit === "lb" ? "primary" : ""}`}
-            type="button"
-            onClick={() => saveSettings({ weightUnit: "lb" })}
-          >
+          <button className={settings.weightUnit === "lb" ? "primary" : "secondary"} type="button" onClick={() => saveSettings({ weightUnit: "lb" })}>
             lb
           </button>
         </div>

@@ -16,7 +16,7 @@ class BabyDayDB extends Dexie {
   outbox!: EntityTable<OutboxRow, "id">;
 
   constructor() {
-    super("baby-day");
+    super("baby-day-app");
     this.version(1).stores({
       events: "id, time, type, updatedAt, deletedAt, syncStatus",
       meta: "key",

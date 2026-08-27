@@ -1,6 +1,6 @@
+import { liveQuery } from "dexie";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRegisterSW } from "virtual:pwa-register/react";
-import { useLiveQuery } from "dexie-react-hooks";
 import { db, getSettings, saveSettings } from "../lib/db";
 import { syncNow, type SyncState } from "../lib/sync";
 import { getSupabase } from "../lib/supabase";
@@ -8,13 +8,9 @@ import type { CareEvent, Settings } from "../lib/types";
 import { defaultSettings } from "../lib/types";
 
 export function useBabyDay() {
-  const settings = useLiveQuery(async () => {
-    const row = await db.meta.get("settings");
-    return row ? ({ ...defaultSettings(), ...(row.value as Settings) } satisfies Settings) : await getSettings();
-  }, []);
-  const events = useLiveQuery(() => db.events.orderBy("time").reverse().toArray(), []) ?? [];
-  const pending = useLiveQuery(() => db.outbox.count(), []) ?? 0;
-
+  const [settings, setSettings] = useState<Settings | null>(null);
+  const [events, setEvents] = useState<CareEvent[]>([]);
+  const [pending, setPending] = useState(0);
   const [page, setPage] = useState<"home" | "settings">("home");
   const [toast, setToast] = useState<{ message: string; undo?: () => void } | null>(null);
   const [sessionStartedAt, setSessionStartedAt] = useState<string | null>(null);
@@ -27,6 +23,32 @@ export function useBabyDay() {
     pending: 0,
     status: "local",
   });
+
+  useEffect(() => {
+    void getSettings().then(setSettings);
+    const settingsSub = liveQuery(async () => {
+      const row = await db.meta.get("settings");
+      return row?.value as Settings | undefined;
+    }).subscribe({
+      next: (value) => {
+        if (value) setSettings({ ...defaultSettings(), ...value });
+      },
+      error: (err) => console.error(err),
+    });
+    const eventsSub = liveQuery(() => db.events.orderBy("time").reverse().toArray()).subscribe({
+      next: setEvents,
+      error: (err) => console.error(err),
+    });
+    const outboxSub = liveQuery(() => db.outbox.count()).subscribe({
+      next: setPending,
+      error: (err) => console.error(err),
+    });
+    return () => {
+      settingsSub.unsubscribe();
+      eventsSub.unsubscribe();
+      outboxSub.unsubscribe();
+    };
+  }, []);
 
   const live = useMemo(() => events.filter((e) => !e.deletedAt), [events]);
 
@@ -92,6 +114,6 @@ export function useBabyDay() {
 }
 
 export function usePwaUpdate() {
-  const { needRefresh, updateServiceWorker } = useRegisterSW({ immediate: true });
-  return { needRefresh: needRefresh[0], reload: () => updateServiceWorker(true) };
+  const { needRefresh, updateServiceWorker } = useRegisterSW({ immediate: false });
+  return { needRefresh: Boolean(needRefresh[0]), reload: () => updateServiceWorker(true) };
 }

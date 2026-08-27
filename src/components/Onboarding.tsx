@@ -1,15 +1,21 @@
-import type { FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import { completeOnboarding } from "../lib/repo";
 
 export function Onboarding({ onDone }: { onDone: () => void }) {
+  const [error, setError] = useState("");
+
   async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const data = new FormData(e.currentTarget);
     const babyName = String(data.get("babyName") ?? "").trim();
     const caregiverName = String(data.get("caregiverName") ?? "").trim();
     if (!babyName || !caregiverName) return;
-    await completeOnboarding({ babyName, caregiverName });
-    onDone();
+    try {
+      await completeOnboarding({ babyName, caregiverName });
+      onDone();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not save");
+    }
   }
 
   return (
@@ -18,6 +24,7 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
         <div className="eyebrow">Family companion</div>
         <div className="wordmark">Baby Day</div>
         <p>A shared memory for the two of you. Log a feed in a couple of taps, then the other parent can see it.</p>
+        {error ? <p className="warn-text">{error}</p> : null}
         <label className="field">
           Baby’s name
           <input name="babyName" autoComplete="off" required placeholder="e.g. Arjun" />
