@@ -53,6 +53,17 @@ export function LanCard() {
         <div className="stack" style={{ marginTop: 12 }}>
           <p className="muted">Other parent: scan this, then show you their QR.</p>
           {lan.offerQr ? <img className="qr" src={lan.offerQr} alt="Pairing QR code" /> : null}
+          <label className="field">
+            Offer code
+            <textarea readOnly value={lan.offerText} rows={3} />
+          </label>
+          <button
+            className="secondary"
+            type="button"
+            onClick={() => void navigator.clipboard.writeText(lan.offerText)}
+          >
+            Copy code
+          </button>
           <button className="secondary" type="button" onClick={() => setScan(true)}>
             Scan their answer
           </button>
@@ -63,6 +74,13 @@ export function LanCard() {
         <div className="stack" style={{ marginTop: 12 }}>
           <p className="muted">Show this to the first phone.</p>
           {lan.answerQr ? <img className="qr" src={lan.answerQr} alt="Answer QR code" /> : null}
+          <button
+            className="secondary"
+            type="button"
+            onClick={() => void navigator.clipboard.writeText(lan.answerText)}
+          >
+            Copy code
+          </button>
         </div>
       )}
 
