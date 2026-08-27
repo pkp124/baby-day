@@ -130,16 +130,25 @@ export function SettingsPage({
       </section>
 
       <section className="card quiet">
+        <h2>Privacy</h2>
+        <p className="muted">
+          Feeds, diapers, sleep, and weight are stored on this phone. They are not sent anywhere unless you connect a shared mailbox.
+          Sharing with the other parent while they are offline cannot be done without some mailbox; if we add that, events will be encrypted on the device first so the host cannot read them.
+        </p>
+      </section>
+
+      <section className="card quiet">
         <h2>Sync</h2>
         {!supabaseConfigured() && (
           <p className="muted">
-            This copy is on-device only. Add <span className="mono">VITE_SUPABASE_URL</span> and{" "}
-            <span className="mono">VITE_SUPABASE_ANON_KEY</span> at build time, run <span className="mono">supabase/schema.sql</span>, then
-            both parents can share one family.
+            Sync is off. This is the private default. A JSON/CSV export is the way to copy data to another device today.
           </p>
         )}
         {supabaseConfigured() && (
           <>
+            <p className="warn-text">
+              Connected sync currently stores events in the cloud in a form the host can read. Do not turn this on for real baby data until on-device encryption exists.
+            </p>
             <p className="muted">
               {sync.signedIn ? `Signed in as ${sync.email ?? "parent"}` : "Sign in to share with the other parent."} Pending: {sync.pending}
             </p>

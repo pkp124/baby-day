@@ -1,6 +1,6 @@
 # Baby Day — current product plan
 
-Living plan for the app in this repo. The original write-up is in [idea-and-plan.md](./idea-and-plan.md). Reviews: [plan-review.md](./plan-review.md), [hosting-and-backend.md](./hosting-and-backend.md).
+Living plan for the app in this repo. The original write-up is in [idea-and-plan.md](./idea-and-plan.md). Reviews: [plan-review.md](./plan-review.md), [hosting-and-backend.md](./hosting-and-backend.md), [privacy.md](./privacy.md).
 
 ## What it is
 
@@ -12,7 +12,8 @@ It is a shared handover layer, not a medical or coaching product.
 
 - **Vite + TypeScript + React**, not a vanilla rewrite later.
 - **IndexedDB (Dexie)** is the source of truth on the device. The service worker caches the app shell only.
-- **GitHub Pages** hosts the PWA. **Supabase** (Postgres + Auth + RLS + Realtime) holds the shared record. The app is fully usable on one phone without Supabase.
+- **GitHub Pages** hosts the PWA. **On-device IndexedDB is the default record.** Optional sync, if enabled later, should be an encrypted mailbox (see [privacy.md](./privacy.md)), not plaintext rows on Supabase. The app is fully usable with no account.
+- **Privacy default:** care events do not leave the phone. Shared async handover cannot be literal on-device-only; that path is end-to-end encryption plus a dumb mailbox, or waiting until both phones are open.
 - **Events are append-first** with client UUIDs, `rev`, `updated_at`, and `deleted_at` tombstones. Last-write-wins on sync.
 - **Breastfeeds are sessions**: start left/right, switch side, per-side seconds, optional formula top-up. Volume is for bottles.
 - **Live timers** persist `startedAt` / `sideStartedAt`. Duration is computed from timestamps. Screen wake lock while a timer runs.
@@ -38,12 +39,8 @@ It is a shared handover layer, not a medical or coaching product.
 
 Charts, notifications, appointments, milk inventory, custom event builder, multiple babies, guest/nurse roles.
 
-## How to go live with two phones
+## Sharing between two phones
 
-1. Create a Supabase project in a nearby region. Enable Google and/or email auth.
-2. Run `supabase/schema.sql`.
-3. Put the project URL and anon key in GitHub Actions secrets `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`.
-4. Enable GitHub Pages (Actions source).
-5. Parent A installs the PWA, signs in, taps **Start a shared family**, creates an invite.
-6. Parent B installs, signs in with a **different** account, pastes the invite.
-7. Confirm an event on A appears on B, then try the same offline.
+Not yet, if the requirement is that a host cannot read the baby record. Use one phone, or export JSON, until end-to-end encrypted sync exists ([privacy.md](./privacy.md)).
+
+Do not point this family at plaintext Supabase.

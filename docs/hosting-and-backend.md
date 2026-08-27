@@ -60,7 +60,9 @@ Constraints to design for:
 
 ## Do I still recommend Supabase?
 
-**Yes, for this family app.** It is still the best default.
+**Yes, as a mailbox — not as the reader of the baby record.**
+
+Plaintext rows plus RLS are not good enough if the requirement is “the host cannot see how long he fed.” Use Supabase (or any store) only after payloads are encrypted on the device. Details in [privacy.md](./privacy.md). For a family of two, the current app should stay on-device until that exists.
 
 You already designed around Postgres, RLS, recoverable auth, and realtime. Supabase is that bundle without you running a server at 2am with a newborn.
 
@@ -98,9 +100,9 @@ Why not “just Postgres on GitHub”: there is no such product.
 | PocketBase on a small VPS | You want SQLite and to own the box | You are on-call for the box |
 | InstantDB / similar local-first BaaS | You want sync as the product | Newer, less RLS-shaped |
 
-I would **not** start here with Firebase unless you already prefer it. I would **not** self-host PocketBase while caring for a newborn. Cloudflare is the best “we outgrew GitHub Pages” frontend move, not a reason to skip a BaaS today.
+I would **not** start here with Firebase unless you already prefer it. I would **not** self-host PocketBase while caring for a newborn.
 
-**Stay with Supabase + GitHub Pages** until the app is boringly useful on two phones.
+**Stay on-device until encrypted sync exists.** GitHub Pages can still host the PWA.
 
 ## Blind spots still worth naming
 
@@ -113,7 +115,7 @@ These are in addition to breast-side timers, iOS eviction, care-day, and undo fr
 - **Invite links leak.** WhatsApp previews, screenshots, grandparents forwarding. Make invites single-use or short-lived, and let a parent revoke them.
 - **Who owns the data if the relationship changes.** Unpleasant, worth one sentence in the model: a family has members; leaving should not silently delete the other parent’s history. Defer a fancy UI; do not make “delete my account” wipe the baby’s record without an explicit choice.
 - **Hospital / visitors / a night nurse.** Out of scope. Do not add a guest role in v1.
-- **This will look like health data.** It is not a medical device and should not give advice. Still: no third-party analytics, no error-reporter that uploads event payloads, no public repo samples with real feeds.
+- **This will look like health data.** It is not a medical device and should not give advice. Still: no third-party analytics, no error-reporter that uploads event payloads, no public repo samples with real feeds. RLS is not privacy from the database host; see [privacy.md](./privacy.md).
 
 ### App / devices
 
