@@ -31,15 +31,13 @@ Use this if one person is the logger, or you are willing to peek at the same pho
 
 Keep this as the default. Never silently create a cloud family.
 
-### B. Peer-to-peer, no baby data on a server
+### B. Local Wi-Fi link (built)
 
-Both phones talk directly (WebRTC). A tiny signaling channel might exchange connection info, not events.
+Settings → **This Wi-Fi**. One phone shows a QR (WebRTC offer), the other scans and shows an answer QR. ICE is **host-only** (no STUN, no TURN), so the care events travel on the LAN between the two phones. Pairing codes never go to a server either.
 
-This can be made so care events never leave the two devices.
+Both apps must stay open on the same network. If someone locks their phone, the link drops; the other phone already has a full local copy of everything received so far. Link again in the evening to catch up. Guest Wi-Fi with AP isolation will fail.
 
-It fails the real night: one parent logs a feed, locks the phone, and goes back to a meeting. The other parent opens the app an hour later. There is no mailbox. The event is stuck until both apps are open on a working network, which iOS PWAs will not do in the background.
-
-Treat P2P as a “we are on the same wifi this afternoon” extra, not as handover.
+This is handover in the “we are both home” sense, not a mailbox for when one of you is out.
 
 ### C. End-to-end encrypted mailbox (recommended if you want both)
 

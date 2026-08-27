@@ -30,6 +30,7 @@ import {
   startSleep,
   switchFeedSide,
 } from "./lib/repo";
+import { useLan } from "./lib/lan";
 import type { CareEvent, FeedData, FeedMethod } from "./lib/types";
 
 type SheetKind =
@@ -44,6 +45,7 @@ type SheetKind =
 
 export default function App() {
   const store = useBabyDay();
+  const lan = useLan();
   const { needRefresh, reload } = usePwaUpdate();
   const active = activeSession(store.events);
   const now = useNow(Boolean(active));
@@ -77,17 +79,20 @@ export default function App() {
     .sort((a, b) => (a.time < b.time ? 1 : -1));
   const totals = dayTotals(store.events, day.start, day.end, now);
   const next = nextBreastSide(store.events);
-  const syncClass = store.sync.status === "error" ? "bad" : store.sync.pending > 0 || store.sync.status === "local" ? "warn" : "";
+  const syncClass =
+    lan.phase === "connected" ? "" : store.sync.status === "error" ? "bad" : store.sync.pending > 0 || store.sync.status === "local" ? "warn" : "";
   const syncLabel =
-    store.sync.status === "local"
-      ? "On this phone"
-      : store.sync.pending > 0
-        ? `${store.sync.pending} waiting to sync`
-        : store.sync.status === "needs-login"
-          ? "Sign in to share"
-          : store.sync.status === "error"
-            ? "Sync issue"
-            : "Synced";
+    lan.phase === "connected"
+      ? `Wi-Fi · ${lan.partnerName || "linked"}`
+      : store.sync.status === "local"
+        ? "On this phone"
+        : store.sync.pending > 0
+          ? `${store.sync.pending} waiting to sync`
+          : store.sync.status === "needs-login"
+            ? "Sign in to share"
+            : store.sync.status === "error"
+              ? "Sync issue"
+              : "Synced";
 
   return (
     <div className="app">
@@ -110,10 +115,10 @@ export default function App() {
               ⚙
             </button>
           </header>
-          <div className={`pill ${syncClass}`}>
+          <button className={`pill-btn ${syncClass}`} type="button" onClick={() => store.setPage("settings")}>
             <span className="dot" />
             {syncLabel}
-          </div>
+          </button>
 
           {active && (
             <ActiveTimer

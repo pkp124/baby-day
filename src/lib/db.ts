@@ -53,9 +53,22 @@ export async function enqueue(op: OutboxRow["op"], eventId: string) {
   });
 }
 
-export async function putEvent(event: CareEvent, queue = true) {
+export type PutEventOptions = { queue?: boolean; silent?: boolean };
+
+const commitHooks = new Set<(event: CareEvent) => void>();
+
+export function onEventCommit(hook: (event: CareEvent) => void) {
+  commitHooks.add(hook);
+  return () => {
+    commitHooks.delete(hook);
+  };
+}
+
+export async function putEvent(event: CareEvent, options: PutEventOptions | boolean = {}) {
+  const opts: PutEventOptions = typeof options === "boolean" ? { queue: options } : options;
   await db.events.put(event);
-  if (queue) await enqueue("upsert", event.id);
+  if (opts.queue !== false) await enqueue("upsert", event.id);
+  if (!opts.silent) commitHooks.forEach((hook) => hook(event));
 }
 
 export async function tombstoneEvent(id: string) {
@@ -68,7 +81,6 @@ export async function tombstoneEvent(id: string) {
     rev: event.rev + 1,
     syncStatus: "pending",
   };
-  await db.events.put(next);
-  await enqueue("delete", id);
+  await putEvent(next);
   return next;
 }

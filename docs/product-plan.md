@@ -32,7 +32,8 @@ It is a shared handover layer, not a medical or coaching product.
 - Handover card after returning from background
 - Undo delete, backdate chips (now / 10m / 20m / 1h)
 - Export JSON/CSV and copy 48-hour summary
-- Optional Supabase sync + invite
+- Optional Supabase sync + invite (not for real baby data until encrypted)
+- Local Wi-Fi handover via QR + WebRTC (host-only ICE)
 - Installable PWA, dark UI
 
 ## Out of scope until you have used it for a week
@@ -41,6 +42,6 @@ Charts, notifications, appointments, milk inventory, custom event builder, multi
 
 ## Sharing between two phones
 
-Not yet, if the requirement is that a host cannot read the baby record. Use one phone, or export JSON, until end-to-end encrypted sync exists ([privacy.md](./privacy.md)).
+**This Wi-Fi** (Settings): QR pair over the local network. Events never go to a server. Both apps must be open on the same network. Catch up by linking again when you are both home.
 
-Do not point this family at plaintext Supabase.
+There is still no cloud mailbox. Do not point this family at plaintext Supabase.

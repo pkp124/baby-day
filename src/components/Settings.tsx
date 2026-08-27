@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from "react";
+import { LanCard } from "./LanCard";
 import type { Settings } from "../lib/types";
 import type { SyncState } from "../lib/sync";
 import { acceptInvite, createInvite, createSharedFamily } from "../lib/sync";
@@ -129,11 +130,12 @@ export function SettingsPage({
         </div>
       </section>
 
+      <LanCard />
+
       <section className="card quiet">
         <h2>Privacy</h2>
         <p className="muted">
-          Feeds, diapers, sleep, and weight are stored on this phone. They are not sent anywhere unless you connect a shared mailbox.
-          Sharing with the other parent while they are offline cannot be done without some mailbox; if we add that, events will be encrypted on the device first so the host cannot read them.
+          Events stay on this phone until you link on this Wi-Fi. Linking copies them to the other phone over the local network only — not to a server. There is still no catch-up while the other phone is off the network; connect again when you are both home.
         </p>
       </section>
 

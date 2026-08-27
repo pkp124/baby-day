@@ -89,7 +89,18 @@ h1, h2, h3 { font-family: var(--display); font-weight: 640; margin: 0; }
   font-size: 1.25rem;
 }
 
-.pill {
+.qr {
+  width: min(320px, 100%);
+  border-radius: 16px;
+  background: #f6efe6;
+  padding: 10px;
+}
+.scan-video {
+  width: 100%;
+  border-radius: 16px;
+  background: #000;
+}
+.pill, .pill-btn {
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -99,14 +110,14 @@ h1, h2, h3 { font-family: var(--display); font-weight: 640; margin: 0; }
   color: var(--muted);
   font-size: 0.88rem;
 }
-.pill .dot {
+.pill .dot, .pill-btn .dot {
   width: 8px;
   height: 8px;
   border-radius: 99px;
   background: var(--ok);
 }
-.pill.warn .dot { background: var(--diaper); }
-.pill.bad .dot { background: var(--danger); }
+.pill.warn .dot, .pill-btn.warn .dot { background: var(--diaper); }
+.pill.bad .dot, .pill-btn.bad .dot { background: var(--danger); }
 
 .card {
   background: var(--surface);

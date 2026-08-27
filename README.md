@@ -35,7 +35,7 @@ A custom domain is nicer for PWA install than `username.github.io/baby-day/`. Th
 2. **Feed → Start left/right** starts a timer. Switch side, then end. Add a formula top-up if you need it. Bottles are a separate choice on the same sheet.
 3. **Sleep** is one tap to start and one tap to end.
 4. **Diaper** is wet / dirty / both, with optional “10 minutes ago.”
-5. Settings: units, care-day start hour (default 5am), 48-hour copy for the pediatrician, JSON/CSV backup.
+5. Settings: units, care-day start hour (default 5am), 48-hour copy for the pediatrician, JSON/CSV backup. **This Wi-Fi** links the other parent’s phone on the home network with a QR code — events stay on the two phones.
 6. iOS: Share → Add to Home Screen. Android: Install app.
 
 No account is required. Names are stored on the phone so the timeline can say who logged what.
