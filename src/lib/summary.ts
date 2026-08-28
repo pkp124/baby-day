@@ -11,6 +11,7 @@ export function pediatricSnapshot(events: CareEvent[], settings: Settings, now =
   const today = dayTotals(live, day.start, day.end, now);
   const lastWeight = live.find((e) => e.type === "weight");
   const lastTemp = live.find((e) => e.type === "temp");
+  const lastPump = live.find((e) => e.type === "pump");
 
   const lines: string[] = [];
   lines.push(`${settings.babyName || "Baby"} — last 48 hours`);
@@ -19,6 +20,9 @@ export function pediatricSnapshot(events: CareEvent[], settings: Settings, now =
   lines.push(
     `Today (care day from ${settings.careDayStartHour}:00): ${today.feeds} feeds, ${formatMl(today.bottleMl, settings.volumeUnit)} bottle, ${today.wet} wet / ${today.dirty} dirty, ${formatDuration(today.sleepSeconds)} sleep`,
   );
+  if (lastPump && lastPump.type === "pump") {
+    lines.push(`Last pump: ${formatMl(pumpMl(lastPump.data as PumpData), settings.volumeUnit)} at ${formatClock(lastPump.time, settings.timezone)}`);
+  }
   if (lastWeight && lastWeight.type === "weight") {
     lines.push(`Last weight: ${formatWeight((lastWeight.data as { grams: number }).grams, settings.weightUnit)} at ${formatClock(lastWeight.time, settings.timezone)}`);
   }

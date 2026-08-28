@@ -77,4 +77,28 @@ describe("summaries", () => {
     expect(text).toContain("1 wet");
     expect(text).not.toContain("percentile");
   });
+
+  it("includes last pump time in the 48h snapshot", () => {
+    const events: CareEvent[] = [
+      {
+        id: "p1",
+        familyId: "f",
+        babyId: "b",
+        memberId: "m",
+        memberName: "Asha",
+        type: "pump",
+        time: "2026-08-28T10:15:00.000Z",
+        endedAt: "2026-08-28T10:15:00.000Z",
+        createdAt: "2026-08-28T10:15:00.000Z",
+        updatedAt: "2026-08-28T10:15:00.000Z",
+        rev: 1,
+        deletedAt: null,
+        data: { leftMl: 40, rightMl: 35 },
+        syncStatus: "pending",
+      },
+    ];
+    const text = pediatricSnapshot(events, settings, new Date("2026-08-28T12:00:00.000Z"));
+    expect(text).toContain("Last pump:");
+    expect(text).toContain("75 ml");
+  });
 });

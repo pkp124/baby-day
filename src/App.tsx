@@ -184,6 +184,9 @@ export default function App() {
           <div className="totals">
             <div className="chip">{totals.feeds} feeds</div>
             <div className="chip">{formatMl(totals.bottleMl, store.settings.volumeUnit)} bottle</div>
+            {totals.pumpMl > 0 ? (
+              <div className="chip">{formatMl(totals.pumpMl, store.settings.volumeUnit)} pump</div>
+            ) : null}
             <div className="chip">{totals.wet} wet</div>
             <div className="chip">{totals.dirty} dirty</div>
             <div className="chip">{formatDuration(totals.sleepSeconds)} sleep</div>

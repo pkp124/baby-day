@@ -131,7 +131,7 @@ h1, h2, h3 { font-family: var(--display); font-weight: 640; margin: 0; }
 
 .glance {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: 1fr 1fr;
   gap: 8px;
   margin: 12px 0 16px;
 }
