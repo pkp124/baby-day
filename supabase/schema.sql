@@ -46,7 +46,7 @@ create table if not exists public.events (
   baby_id uuid not null references public.babies(id) on delete cascade,
   member_id uuid not null references public.family_members(id),
   member_name text not null default '',
-  type text not null check (type in ('feed', 'pump', 'diaper', 'sleep', 'weight', 'note')),
+  type text not null check (type in ('feed', 'pump', 'diaper', 'sleep', 'weight', 'temp', 'note')),
   time timestamptz not null,
   ended_at timestamptz,
   created_at timestamptz not null,

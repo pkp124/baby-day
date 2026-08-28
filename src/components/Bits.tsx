@@ -1,21 +1,58 @@
-import type { BreastSide, CareEvent, FeedData, Settings } from "../lib/types";
+import type { BreastSide, CareEvent, FeedData, Settings, TempData } from "../lib/types";
 import { bottleMl, feedSeconds, mostRecent, nextBreastSide } from "../lib/domain";
-import { formatClock, formatDuration, formatRelative } from "../lib/time";
-import { formatMl, formatWeight } from "../lib/units";
+import { formatClock, formatDuration, formatRelative, fromDatetimeLocalValue, minutesAgoIso, toDatetimeLocalValue } from "../lib/time";
+import { formatMl, formatTemp, formatWeight } from "../lib/units";
 import { describeEvent } from "../lib/summary";
 
-export function TimeChips({
-  minutesAgo,
-  onChange,
+export function WhenField({
+  timezone,
+  valueIso,
+  onChangeIso,
+  label = "When",
 }: {
-  minutesAgo: number;
-  onChange: (n: number) => void;
+  timezone: string;
+  valueIso: string;
+  onChangeIso: (iso: string) => void;
+  label?: string;
 }) {
+  const minutesAgo = Math.round((Date.now() - new Date(valueIso).getTime()) / 60_000);
+  const chipMatch = [0, 10, 20, 60].find((n) => Math.abs(minutesAgo - n) <= 1);
   return (
-    <div className="timechips">
-      {[0, 10, 20, 60].map((n) => (
-        <button key={n} type="button" className={minutesAgo === n ? "on" : ""} onClick={() => onChange(n)}>
-          {n === 0 ? "Now" : n === 60 ? "1h ago" : `${n}m ago`}
+    <>
+      <div className="timechips">
+        {[0, 10, 20, 60].map((n) => (
+          <button
+            key={n}
+            type="button"
+            className={chipMatch === n ? "on" : ""}
+            onClick={() => onChangeIso(minutesAgoIso(n))}
+          >
+            {n === 0 ? "Now" : n === 60 ? "1h ago" : `${n}m ago`}
+          </button>
+        ))}
+      </div>
+      <label className="field">
+        {label}
+        <input
+          type="datetime-local"
+          step={60}
+          value={toDatetimeLocalValue(valueIso, timezone)}
+          onChange={(e) => {
+            if (!e.target.value) return;
+            onChangeIso(fromDatetimeLocalValue(e.target.value, timezone));
+          }}
+        />
+      </label>
+    </>
+  );
+}
+
+export function DurationChips({ value, onChange }: { value: number; onChange: (n: number) => void }) {
+  return (
+    <div className="stepper">
+      {[5, 10, 15, 20, 30].map((n) => (
+        <button key={n} type="button" className={value === n ? "on" : ""} onClick={() => onChange(n)}>
+          {n}m
         </button>
       ))}
     </div>
@@ -182,4 +219,10 @@ export function WeightLine({ events, settings }: { events: CareEvent[]; settings
   return (
     <div className="chip">Weight {formatWeight((last.data as { grams: number }).grams, settings.weightUnit)}</div>
   );
+}
+
+export function TempLine({ events, settings }: { events: CareEvent[]; settings: Settings }) {
+  const last = mostRecent(events, "temp");
+  if (!last || last.type !== "temp") return null;
+  return <div className="chip">Temp {formatTemp((last.data as TempData).celsius, settings.tempUnit)}</div>;
 }

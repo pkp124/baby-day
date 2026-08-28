@@ -108,6 +108,11 @@ export function dayTotals(events: CareEvent[], start: Date, end: Date, now = new
       if (kind === "dirty" || kind === "both") totals.dirty += 1;
     } else if (e.type === "sleep") {
       totals.sleepSeconds += eventDurationSeconds(e.time, e.endedAt, now);
+    } else if (e.type === "weight" || e.type === "temp" || e.type === "note") {
+      continue;
+    } else {
+      const _exhaustive: never = e.type;
+      void _exhaustive;
     }
   }
   return totals;

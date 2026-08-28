@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useBabyDay, usePwaUpdate } from "./hooks/useBabyDay";
 import { useNow, useWakeLock } from "./hooks/useNow";
 import { Onboarding } from "./components/Onboarding";
-import { Glance, HandoverCard, Timeline, WeightLine } from "./components/Bits";
+import { Glance, HandoverCard, TempLine, Timeline, WeightLine } from "./components/Bits";
 import {
   BottleSheet,
   DiaperSheet,
@@ -11,6 +11,8 @@ import {
   Modal,
   NoteSheet,
   PumpSheet,
+  SleepSheet,
+  TempSheet,
   WeightSheet,
 } from "./components/Sheets";
 import { SettingsPage } from "./components/Settings";
@@ -21,9 +23,12 @@ import {
   addBottleToFeed,
   endTimedEvent,
   logBottleFeed,
+  logBreastFeed,
   logDiaper,
   logNote,
   logPump,
+  logSleep,
+  logTemperature,
   logWeight,
   restoreEvent,
   startBreastFeed,
@@ -39,6 +44,8 @@ type SheetKind =
   | "diaper"
   | "pump"
   | "weight"
+  | "temp"
+  | "sleep"
   | "note"
   | "event"
   | null;
@@ -146,11 +153,11 @@ export default function App() {
               onClick={() => {
                 if (active?.type === "sleep") void endTimedEvent(active.id);
                 else if (active) store.flash("End the feed first");
-                else void startSleep();
+                else setSheet("sleep");
               }}
             >
               <div className="label">{active?.type === "sleep" ? "End sleep" : "Sleep"}</div>
-              <div className="hint">{active?.type === "sleep" ? "tap to wake" : "one tap to start"}</div>
+              <div className="hint">{active?.type === "sleep" ? "tap to wake" : "start or log times"}</div>
             </button>
             <button className="action" type="button" onClick={() => setSheet("diaper")}>
               <div className="label">Diaper</div>
@@ -163,6 +170,10 @@ export default function App() {
             <button className="action" type="button" onClick={() => setSheet("weight")}>
               <div className="label">Weight</div>
               <div className="hint">optional</div>
+            </button>
+            <button className="action" type="button" onClick={() => setSheet("temp")}>
+              <div className="label">Temp</div>
+              <div className="hint">°C or °F</div>
             </button>
             <button className="action" type="button" onClick={() => setSheet("note")}>
               <div className="label">Note</div>
@@ -177,6 +188,7 @@ export default function App() {
             <div className="chip">{totals.dirty} dirty</div>
             <div className="chip">{formatDuration(totals.sleepSeconds)} sleep</div>
             <WeightLine events={store.events} settings={store.settings} />
+            <TempLine events={store.events} settings={store.settings} />
           </div>
         </div>
 
@@ -205,10 +217,16 @@ export default function App() {
           {sheet === "feed" && (
             <FeedSheet
               next={next}
-              onBreast={async (side, minutesAgo) => {
+              timezone={store.settings.timezone}
+              onBreast={async (side, iso) => {
                 if (active) await endTimedEvent(active.id);
-                await startBreastFeed(side, { minutesAgo });
+                await startBreastFeed(side, { iso });
                 setSheet(null);
+              }}
+              onLogBreast={async ({ startedOn, leftSeconds, rightSeconds, iso }) => {
+                await logBreastFeed({ startedOn, leftSeconds, rightSeconds, when: { iso } });
+                setSheet(null);
+                store.flash("Feed saved");
               }}
               onPickBottle={(method) => {
                 setBottleMethod(method);
@@ -220,7 +238,8 @@ export default function App() {
             <BottleSheet
               method={bottleMethod}
               unit={store.settings.volumeUnit}
-              onSave={async (amount, minutesAgo) => {
+              timezone={store.settings.timezone}
+              onSave={async (amount, iso) => {
                 const ml = displayToMl(amount, store.settings.volumeUnit);
                 if (active?.type === "feed" && bottleMethod === "mixed") {
                   await addBottleToFeed(active.id, { formulaMl: ml, method: "mixed" });
@@ -230,7 +249,7 @@ export default function App() {
                     volumeMl: ml,
                     formulaMl: bottleMethod === "formula" || bottleMethod === "mixed" ? ml : undefined,
                     expressedMl: bottleMethod === "expressed" ? ml : undefined,
-                    when: { minutesAgo },
+                    when: { iso },
                   });
                 }
                 setSheet(null);
@@ -240,8 +259,9 @@ export default function App() {
           )}
           {sheet === "diaper" && (
             <DiaperSheet
-              onSave={async (kind, minutesAgo) => {
-                await logDiaper(kind, { minutesAgo });
+              timezone={store.settings.timezone}
+              onSave={async (kind, iso) => {
+                await logDiaper(kind, { iso });
                 setSheet(null);
                 store.flash("Diaper saved");
               }}
@@ -250,11 +270,12 @@ export default function App() {
           {sheet === "pump" && (
             <PumpSheet
               unit={store.settings.volumeUnit}
-              onSave={async (left, right, minutesAgo) => {
+              timezone={store.settings.timezone}
+              onSave={async (left, right, iso) => {
                 await logPump({
                   leftMl: displayToMl(left, store.settings.volumeUnit),
                   rightMl: displayToMl(right, store.settings.volumeUnit),
-                  when: { minutesAgo },
+                  when: { iso },
                 });
                 setSheet(null);
                 store.flash("Pump saved");
@@ -264,17 +285,44 @@ export default function App() {
           {sheet === "weight" && (
             <WeightSheet
               unit={store.settings.weightUnit}
-              onSave={async (grams, minutesAgo) => {
-                await logWeight(grams, { minutesAgo });
+              timezone={store.settings.timezone}
+              onSave={async (grams, iso) => {
+                await logWeight(grams, { iso });
                 setSheet(null);
                 store.flash("Weight saved");
               }}
             />
           )}
+          {sheet === "temp" && (
+            <TempSheet
+              unit={store.settings.tempUnit}
+              timezone={store.settings.timezone}
+              onSave={async (celsius, iso) => {
+                await logTemperature(celsius, { iso });
+                setSheet(null);
+                store.flash("Temperature saved");
+              }}
+            />
+          )}
+          {sheet === "sleep" && (
+            <SleepSheet
+              timezone={store.settings.timezone}
+              onStart={async (iso) => {
+                await startSleep({ iso });
+                setSheet(null);
+              }}
+              onLog={async (startIso, endIso) => {
+                await logSleep({ start: { iso: startIso }, endedAt: endIso });
+                setSheet(null);
+                store.flash("Sleep saved");
+              }}
+            />
+          )}
           {sheet === "note" && (
             <NoteSheet
-              onSave={async (text, minutesAgo) => {
-                await logNote(text, { minutesAgo });
+              timezone={store.settings.timezone}
+              onSave={async (text, iso) => {
+                await logNote(text, { iso });
                 setSheet(null);
                 store.flash("Note saved");
               }}

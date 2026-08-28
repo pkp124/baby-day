@@ -136,7 +136,47 @@ export function minutesAgoIso(minutes: number, from = new Date()) {
   return new Date(from.getTime() - minutes * 60_000).toISOString();
 }
 
+function pad2(n: number) {
+  return String(n).padStart(2, "0");
+}
+
+/** Civil datetime string for `<input type="datetime-local">` in a timezone. */
+export function toDatetimeLocalValue(iso: string, timeZone: string) {
+  const p = zonedParts(new Date(iso), timeZone);
+  return `${p.year}-${pad2(p.month)}-${pad2(p.day)}T${pad2(p.hour)}:${pad2(p.minute)}`;
+}
+
+/** Parse a datetime-local value as a civil time in `timeZone`. */
+export function fromDatetimeLocalValue(value: string, timeZone: string) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/.exec(value);
+  if (!match) return new Date().toISOString();
+  return fromZonedLocal(
+    timeZone,
+    Number(match[1]),
+    Number(match[2]),
+    Number(match[3]),
+    Number(match[4]),
+    Number(match[5]),
+  ).toISOString();
+}
+
 export function eventDurationSeconds(time: string, endedAt: string | null, now = new Date()) {
   const end = endedAt ? new Date(endedAt).getTime() : now.getTime();
   return Math.max(0, (end - new Date(time).getTime()) / 1000);
+}
+
+/** If start + duration would end in the future, slide the window so it ends now. */
+export function spanFromStart(startIso: string, durationSeconds: number, now = new Date()) {
+  const durationMs = Math.max(0, durationSeconds) * 1000;
+  let time = startIso;
+  let endedAt = new Date(new Date(time).getTime() + durationMs).toISOString();
+  if (new Date(endedAt).getTime() > now.getTime()) {
+    endedAt = now.toISOString();
+    time = new Date(now.getTime() - durationMs).toISOString();
+  }
+  return { time, endedAt };
+}
+
+export function orderedInstants(a: string, b: string) {
+  return new Date(a).getTime() <= new Date(b).getTime() ? ([a, b] as const) : ([b, a] as const);
 }

@@ -111,6 +111,12 @@ export function SettingsPage({
           <button className={settings.weightUnit === "lb" ? "primary" : "secondary"} type="button" onClick={() => saveSettings({ weightUnit: "lb" })}>
             lb
           </button>
+          <button className={settings.tempUnit === "C" ? "primary" : "secondary"} type="button" onClick={() => saveSettings({ tempUnit: "C" })}>
+            °C
+          </button>
+          <button className={settings.tempUnit === "F" ? "primary" : "secondary"} type="button" onClick={() => saveSettings({ tempUnit: "F" })}>
+            °F
+          </button>
         </div>
       </section>
 

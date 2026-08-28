@@ -1,6 +1,6 @@
-import type { BreastSide, CareEvent, DiaperKind, EventData, FeedData, FeedMethod, PumpData, Settings } from "./types";
+import type { BreastSide, CareEvent, DiaperKind, EventData, FeedData, FeedMethod, PumpData, Settings, SleepData } from "./types";
 import { db, enqueue, getSettings, putEvent, saveSettings, tombstoneEvent } from "./db";
-import { minutesAgoIso } from "./time";
+import { minutesAgoIso, orderedInstants, spanFromStart } from "./time";
 
 function nowIso() {
   return new Date().toISOString();
@@ -134,10 +134,54 @@ export async function endTimedEvent(id: string, now = new Date()) {
   return next;
 }
 
+export async function logBreastFeed(input: {
+  startedOn: BreastSide;
+  leftSeconds: number;
+  rightSeconds: number;
+  note?: string;
+  when?: LogTime;
+}) {
+  const settings = await getSettings();
+  const leftSeconds = Math.max(0, input.leftSeconds);
+  const rightSeconds = Math.max(0, input.rightSeconds);
+  const { time, endedAt } = spanFromStart(resolveTime(input.when), leftSeconds + rightSeconds);
+  const data: FeedData = {
+    method: "breast",
+    startedOn: input.startedOn,
+    leftSeconds,
+    rightSeconds,
+    note: input.note,
+  };
+  const event = baseEvent(settings, "feed", data, time, endedAt);
+  await putEvent(event);
+  buzz();
+  return event;
+}
+
 export async function startSleep(when?: LogTime) {
   const settings = await getSettings();
   const time = resolveTime(when);
   const event = baseEvent(settings, "sleep", {}, time, null);
+  await putEvent(event);
+  buzz();
+  return event;
+}
+
+export async function logSleep(input: { start: LogTime; endedAt: string; note?: string }) {
+  const settings = await getSettings();
+  const time = resolveTime(input.start);
+  const data: SleepData = { note: input.note };
+  const [startIso, endIso] = orderedInstants(time, input.endedAt);
+  const event = baseEvent(settings, "sleep", data, startIso, endIso);
+  await putEvent(event);
+  buzz();
+  return event;
+}
+
+export async function logTemperature(celsius: number, when?: LogTime, note?: string) {
+  const settings = await getSettings();
+  const time = resolveTime(when);
+  const event = baseEvent(settings, "temp", { celsius, note }, time, time);
   await putEvent(event);
   buzz();
   return event;

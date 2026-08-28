@@ -13,6 +13,7 @@
   --diaper: #e8c27a;
   --pump: #7eb8c9;
   --weight: #c4a5e0;
+  --temp: #e58b7a;
   --note: #d9cbb8;
   --danger: #e08a8a;
   --ok: #9cbf8a;
@@ -244,6 +245,7 @@ h1, h2, h3 { font-family: var(--display); font-weight: 640; margin: 0; }
 .mark.diaper { background: var(--diaper); }
 .mark.pump { background: var(--pump); }
 .mark.weight { background: var(--weight); }
+.mark.temp { background: var(--temp); }
 
 .sheet-backdrop {
   position: fixed;
@@ -284,12 +286,17 @@ h1, h2, h3 { font-family: var(--display); font-weight: 640; margin: 0; }
   margin: 10px 0;
   color: var(--muted);
 }
-.field input, .field textarea {
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: 16px;
-  padding: 14px;
-  min-height: var(--tap);
+.field input[type="datetime-local"] {
+  color-scheme: dark;
+}
+.sheet > .primary,
+.sheet > .secondary {
+  width: 100%;
+}
+.sheet-split {
+  margin: 16px 0 4px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
 }
 .stepper { display: flex; gap: 8px; flex-wrap: wrap; }
 .stepper button, .timechips button {
