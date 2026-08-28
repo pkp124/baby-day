@@ -40,6 +40,8 @@ It is a shared handover layer, not a medical or coaching product.
 
 Charts, notifications, appointments, milk inventory, custom event builder, multiple babies, guest/nurse roles.
 
+Ranked ideas for later (usefulness and impact to new parents, not a build list): [productization-catalog.md](./productization-catalog.md).
+
 ## Sharing between two phones
 
 **This Wi-Fi** (Settings): QR pair over the local network. Events never go to a server. Both apps must be open on the same network. Catch up by linking again when you are both home.

@@ -103,6 +103,7 @@ A custom domain is nicer for PWA install than `username.github.io/baby-day/`. Th
 
 - [Privacy](docs/privacy.md) — what stays on the phone, and what sharing actually does
 - [Current product plan](docs/product-plan.md)
+- [Productization catalog](docs/productization-catalog.md) — ranked ideas for later, by usefulness and impact to new parents
 - [Hosting and backend](docs/hosting-and-backend.md)
 - [Original idea](docs/idea-and-plan.md)
 - [Plan review](docs/plan-review.md)
