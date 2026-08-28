@@ -53,7 +53,7 @@ New work has to pass all four. A high score in the [catalog](./productization-ca
 
 Charts, notifications, appointments, milk inventory, custom event builder, multiple babies, guest/nurse roles, in-app voice, cry audio.
 
-The [productization catalog](./productization-catalog.md) is a menu, not a roadmap. Until this family has used the current app at night, do not start rows below the bar. Next work that *can* pass the bar: make the log harder to lose (#3), a copy-paste briefing (#4), then a shift baton or encrypted mailbox if two phones need async handover.
+The [productization catalog](./productization-catalog.md) is a menu, not a roadmap. Until this family has used the current app at night, do not start product rows below the bar. Work that *can* pass the bar first: usability of the current screens (undo on save, thumb-zone actions, last night, choices before the clock), then make the log harder to lose, a copy-paste briefing, then a shift baton or encrypted mailbox if two phones need async handover.
 
 ## Sharing between two phones
 

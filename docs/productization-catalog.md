@@ -22,6 +22,8 @@ Quick log (feed, pump, diaper, sleep, temp, weight, note), live breast/sleep tim
 
 The gaps are not “more event types.” They are: **handover when the other phone is off**, **surviving the phone**, and **the two minutes when a shift actually changes**.
 
+Making the *current* log easier at 3am is a different list. That list is [Usability of what we already have](#usability-of-what-we-already-have). Those items pass the bar more often than new product rows.
+
 ---
 
 ## Ranked catalog
@@ -298,6 +300,38 @@ These productize *some* baby app. They would make this one worse.
 
 ---
 
+## Usability of what we already have
+
+These are not new products. They make the current log easier at 3am. They pass the bar when they **remove taps, prevent a wrong row, or keep the home screen scannable** — without a new genre.
+
+Grounded in the screens as they are today: a sheet for every log, `When` chips above the real choices, Feed / Sleep / Diaper / Pump / Weight / Temp / Note as equal home tiles (Feed is already wide), undo only on delete, Today is one care day, `datetime-local` for exact time.
+
+| Rank | Improvement | Why at 3am |
+| ---: | --- | --- |
+| U1 | **Undo on save**, not only on delete | Fat-finger wet vs dirty, wrong side, 90 vs 30 ml. The toast already exists; most saves do not offer Undo. |
+| U2 | **Thumb-zone home** | Put Feed / Diaper / Sleep in a sticky bottom bar. Weight, temp, note behind **More**. Rare actions currently steal the same size as a diaper. |
+| U3 | **Last night / previous care day** | Care day rolls at 05:00. At 07:00, the 2am feed is gone from Today. A “last night” peek is how morning handover actually works. |
+| U4 | **Choices first, clock second** | Wet / Start left should be the first tap. Exact time and `datetime-local` belong behind “not now.” The iOS clock control flashes bright and is easy to mis-set. |
+| U5 | **Repeat last bottle / last pump** | Night formula is often the same amount. Pump sheet starts at 0. One chip: last amount. |
+| U6 | **Tap the glance to fix it** | Last feed / last diaper should open that event. Today you scroll the timeline and hope you hit the right row. |
+| U7 | **Fewer Feed choices** | Six buttons on the first feed sheet. Keep Start left / Start right / after-the-fact. Collapse formula, expressed, mixed under **Bottle**. |
+| U8 | **Do not dismiss on a stray backdrop tap** | The sheet closes if you miss the panel. Require Close, or swipe down with an explicit discard. |
+| U9 | **Sleep: Start now vs log a nap** | Both live on one sheet with two clocks. A giant **Start sleep** and a folded “already happened” path matches how the home Sleep button already thinks. |
+| U10 | **Save must be obvious** | A 12ms vibrate is easy to miss. Stronger haptic plus a full-screen flash or a toast that cannot hide under the closing sheet. |
+| U11 | **Who logged, in the glance** | `describeEvent` already appends the name. The glance and the timeline’s extra line do not. Two parents need “Asha · 40m ago,” not only relative time. |
+| U12 | **Install hint** | iOS will evict a Safari tab. One quiet “Add to Home Screen” the first nights. Reliability dressed as usability. |
+| U13 | **Copy 48h from home** | The pediatric snapshot is buried in Settings. Same as catalog #4 if the button is **Copy what’s going on**, not a new report. |
+| U14 | **Guard double taps** | Two Start left in a second should not be two feeds. Disable until the first write lands. |
+| U15 | **Safe area and dim chrome** | Top notch padding; keep the sheet and the clock picker from punching a white hole in night mode. |
+
+**Do not do as “usability”:** extra fields on every sheet, a second dashboard, charts, or voice until these are boring. More choices is not more usable.
+
+### Why U1–U4 before voice or widgets
+
+Voice (#9) and lock-screen glance (#8) help only after a tap is already trustworthy. Undo, thumb reach, last night, and putting the action before the clock are the same product, fewer mistakes, no mic, no native wrapper.
+
+---
+
 ## How this maps to productizing (not just adding features)
 
 Three honest products, in order of parent impact:
@@ -315,7 +349,7 @@ Until nightly use of the current app is boring, ignore ranks below this shortlis
 | Bar | Next, if anything | Not yet |
 | --- | --- | --- |
 | **Simple** | One more glance line, or one more home tap, not a new screen genre. | Guest roles, pumping stash UI, kitchen mode, twins, solids, charts. |
-| **Usable** | Copy briefing (#4). On-duty flag (#5). Vitamin D as one chip (#6) only if home still fits. | Voice (#9) until taps are trusted. Widgets and watch until the PWA glance is enough. |
+| **Usable** | U1–U4 on the current screens. Copy briefing (#4 / U13). | Voice (#9) until taps are trusted. Widgets until the in-app glance is enough. |
 | **Reliable** | Stale-timer prompt + a backup that actually runs (#3). | Anything that adds data we cannot restore. |
 | **Privacy first** | Shift baton (#2) — still on the two phones. Encrypted mailbox (#1) only as ciphertext. | Cloud speech, cry upload, plaintext Supabase, always-on mic. |
 
