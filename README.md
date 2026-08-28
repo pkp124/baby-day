@@ -6,6 +6,21 @@ Log feeds (including time on each breast), bottles, diapers, sleep, weight, and 
 
 The app is **local-first**. Care events stay on the phone unless you later turn on an encrypted share. See [privacy.md](docs/privacy.md).
 
+## Screenshots
+
+Phone-sized views of the home dashboard, milk totals, and the feed and sleep sheets.
+
+<table>
+  <tr>
+    <td><img src="docs/screenshots/home.png" alt="Home dashboard with last feed, last pump, last diaper, and quick-log buttons" /></td>
+    <td><img src="docs/screenshots/milk.png" alt="Milk totals for fed, formula, pumped, and fridge, plus today’s timeline" /></td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/feed.png" alt="Feed sheet with breast timer, per-side times, bottles, and a clock picker" /></td>
+    <td><img src="docs/screenshots/sleep.png" alt="Sleep sheet with start time, live start, and finished nap wake time" /></td>
+  </tr>
+</table>
+
 ## Run locally
 
 ```bash
