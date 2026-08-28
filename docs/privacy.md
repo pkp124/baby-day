@@ -75,4 +75,4 @@ Until C exists, connecting Supabase would upload plaintext. The UI should keep s
 - Put events in a git repo, gist, or issue. History never forgets.
 - Trust “the URL is secret” or “the family code is long enough.”
 - Use the phone’s screenshot folder as a diary.
-- Build cry/audio upload. That is a different, worse privacy product.
+- Upload cry or room audio. Clips of this baby, if you ever record them, stay on the device and are not mailbox payloads. See [productization-catalog.md](./productization-catalog.md) §16.

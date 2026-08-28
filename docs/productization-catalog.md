@@ -43,16 +43,17 @@ The gaps are not “more event types.” They are: **handover when the other pho
 | 13 | Daycare drop-off card | 4 | 3 | 11* | Month 3–4 onward |
 | 14 | Kitchen / counter display | 3 | 4 | 10 | WFH, tablet on the counter |
 | 15 | Watch / live activity for the running timer | 3 | 4 | 10 | Parents who already wear a watch |
-| 16 | Optional diaper detail (poop chips) | 3 | 3 | 9 | The week the pediatrician asks “what did the stool look like?” |
-| 17 | Spit-up as a one-chip event | 2 | 4 | 8 | Reflux-y newborns |
+| 16 | Cry bouts + weak labels from *this* baby’s log | 3 | 3 | 9 | Night-stand listen; native; opt-in |
+| 17 | Optional diaper detail (poop chips) | 3 | 3 | 9 | The week the pediatrician asks “what did the stool look like?” |
 | 18 | Voice-to-event, on device | 3 | 3 | 9 | One-handed feeds; privacy-sensitive |
 | 19 | Catch-up over Bluetooth / AirDrop | 3 | 3 | 9 | Same as #2, smoother transport |
-| 20 | Solids / first bites | 2 | 2 | 6 | After ~6 months — different product moment |
-| 21 | Second baby / twins | 5 | 2 | 12* | Small group, huge for them |
-| 22 | Appointments on the timeline | 2 | 2 | 6 | Calendar apps already win |
-| 23 | Push reminders | 2 | 2 | 6 | Fatigue; weak on iOS PWA |
-| 24 | Charts and trends | 2 | 2 | 6 | Useful later; not why people stay in week two |
-| 25 | Native wrapper for widgets | 3 | 3 | 9 | Packaging for #8 and #15, not a feature by itself |
+| 20 | Spit-up as a one-chip event | 2 | 4 | 8 | Reflux-y newborns |
+| 21 | Solids / first bites | 2 | 2 | 6 | After ~6 months — different product moment |
+| 22 | Second baby / twins | 5 | 2 | 12* | Small group, huge for them |
+| 23 | Appointments on the timeline | 2 | 2 | 6 | Calendar apps already win |
+| 24 | Push reminders | 2 | 2 | 6 | Fatigue; weak on iOS PWA |
+| 25 | Charts and trends | 2 | 2 | 6 | Useful later; not why people stay in week two |
+| 26 | Native wrapper for widgets | 3 | 3 | 9 | Packaging for #8, #15, and #16, not a feature by itself |
 
 \*Conditional: score is high **for that subset** of parents, near zero otherwise. Ranked below universal newborn needs.
 
@@ -194,14 +195,53 @@ Start/end sleep, log a wet diaper, see the running feed, from a watch. The phone
 
 High usefulness, high platform cost. Only worth it after the PWA glance is trusted. Live Activity on iOS for the in-progress timer is the slice that matches this app’s actual workflow.
 
-## 16–19. Small logs and smoother pipes
+## 16. Cry bouts + weak labels from this baby’s log
+
+**The wish is real. The five-signal “baby language” translator is the wrong product. A personal, on-device version that learns from the care log is the only variant that belongs near this catalog.**
+
+New parents want to know *why* the baby is crying. That desire is as strong as handover. Consumer apps already sell five classes (hungry, tired, discomfort, pain, burp). The science underneath is weak: infant cries encode **how upset**, not a stable vocabulary. A model trained on other babies transfers poorly. This baby at day 10 is not this baby at week eight. A wrong “pain” or a wrong “hungry” is not a cute miss — it delays the other action.
+
+So do not ship an oracle. If this is ever built for Baby Day, ship a **pattern over this family’s own nights**.
+
+### What would actually fit
+
+1. **Night-stand listen** (opt-in, native, phone plugged in). Not a pocket mic all day. Cry-gated clips of a few seconds, not a continuous tape of the room.
+2. **Labels from the log you already keep**, not from a 3am taxonomy quiz. Clip at 02:14, feed at 02:21 → weak label *feed*. Diaper within the window → *diaper*. Sleep start → *sleep*. Nothing logged, baby settled → *soothe / unknown*. Parents may override. They should not have to classify five Dunstan-style signals to make the feature work.
+3. **On-device personalization**, not training a net from scratch on the phone. Ship a frozen audio encoder. Store embeddings (and clips only for a short window). A tiny head — prototypes or a linear layer — updates from those weak labels. Decay older examples as the baby changes. Do not show a guess until there are enough examples per class.
+4. **Humble copy.** Never “the baby is hungry.” Prefer “this sounded like the cries that were followed by a feed (low confidence).” Same voice as #11 (next likely): a lookup over *this* log.
+
+That is the automated recording idea, constrained so it does not become a monitor company. Manual “record this cry” while the app is already open is a valid PWA slice and a way to collect labels without always-on audio. Auto-listen is what forces a native wrapper (#26).
+
+### Why the rank is 16, not 1
+
+| If it worked as advertised | Why it does not rank with mailbox / baton |
+| --- | --- |
+| Impact would feel like a 5 | Expected impact is a 3: misfires, age drift, and the parent who already knows this cry will not look at the phone |
+| Usefulness would feel like a 5 | Real usefulness is a 3: people try it for a week, then only the personalized, quiet version survives |
+| It is a different product | Handover answers “what already happened.” Cry class answers “what should I do,” which is one step from coaching |
+
+It still outranks charts and push because, unlike those, it is a *night* problem. It sits with other score-9 extras (poop chips, on-device voice) and **behind** anything that makes the existing log trustworthy and shared.
+
+### Constraints if you ever build it
+
+- **On-device only.** Clips and embeddings never go to Supabase, the mailbox, analytics, or error reports. Not even ciphertext. Audio is not a care event.
+- **No five-class marketing.** If you need names, use this app’s actions: feed, sleep, diaper, soothe, unlabeled. Drop “pain” as a predicted class — that is medical framing. A parent can still log a temp or a note.
+- **No background mic in the PWA.** `getUserMedia` dies when the phone sleeps. iOS will not give a home-screen web app a baby-monitor session. Auto-record means native, plugged in, a visible “listening tonight” state, and a way to wipe the night’s audio in one tap.
+- **Battery and household privacy.** Other adults talk in that room. Cry-gating and short retention are the difference between a clip of a cry and a tape of the house.
+- **False confidence.** Show completeness (“12 labeled bouts in 14 days”) the same way you should show missing diapers on a clinic pack. If the model is quiet, that is success.
+
+### What stays out
+
+A cloud cry translator, an always-on pocket mic, camera + audio, and any UI that says Dunstan/ChatterBaby-style “the baby is saying X.” Those productize a different company and fight [privacy.md](./privacy.md).
+
+## 17–20. Small logs and smoother pipes
 
 - **Poop chips** (color/consistency, optional, never required): the question pediatricians actually ask. Hide behind “more” on the diaper sheet.
 - **Spit-up chip**: does not invent millilitres. A timestamp + “after feed” is enough.
 - **On-device voice → event**: “fed left, ten minutes” if it never leaves the phone. Easy to get wrong; easy to leak if it uses a cloud speech API. Only if it stays on-device.
 - **AirDrop / Bluetooth catch-up**: transport for the baton (#2). Same idea, less QR fiddling.
 
-## 20–24. Later, or probably never as Baby Day
+## 21–25. Later, or probably never as Baby Day
 
 | Idea | Why it is ranked down |
 | --- | --- |
@@ -211,11 +251,11 @@ High usefulness, high platform cost. Only worth it after the PWA glance is trust
 | Push reminders | Notification fatigue; iOS PWA is a poor channel. A widget plus on-duty beats a badge. |
 | Charts / WHO curves | False authority. Time-since-last and daily totals are the dashboard. Revisit only after a month of complete logs, still without medical framing. |
 
-## 25. Native wrapper (packaging, not a feature)
+## 26. Native wrapper (packaging, not a feature)
 
-A thin iOS/Android shell around the same local-first core, only to unlock widgets, Live Activities, and durable storage. Not a rewrite. Not a reason to abandon the PWA for the family that already uses it.
+A thin iOS/Android shell around the same local-first core, only to unlock widgets, Live Activities, durable storage, and (if you ever do #16) night-stand cry listen. Not a rewrite. Not a reason to abandon the PWA for the family that already uses it.
 
-Pay for this only in service of #3, #8, and #15.
+Pay for this only in service of #3, #8, #15, and #16.
 
 ---
 
@@ -223,7 +263,8 @@ Pay for this only in service of #3, #8, and #15.
 
 These productize *some* baby app. They would make this one worse.
 
-- Cry / audio analysis, camera, or always-on mic
+- Cloud cry/audio upload, an always-on pocket mic, or a five-signal “the baby is saying X” translator (the on-device log-labeled variant is #16, not this)
+- Camera or always-on video
 - Medical advice, percentiles, “is this normal?” scoring
 - Social feed, parent community, leaderboards
 - Ads, affiliate marketplace, diaper-subscription upsells
@@ -240,7 +281,7 @@ Three honest products, in order of parent impact:
 2. **The private family mailbox** — #1 plus #3. This is what you can charge for: async handover the host cannot read.
 3. **The care-circle snapshot** — #7, #9, #13. Same event log, different one-tap outputs for the pediatrician, the grandmother, and daycare.
 
-Do not start a fourth product (coach, social, shop). The differentiator in the original plan is still the right one: *one parent logs in a few seconds, the other knows, neither has to ask.*
+Do not start a fourth product (coach, social, shop, cry translator). A night-stand, on-device cry bout feature (#16) is an optional extra on the log, not a new company. The differentiator in the original plan is still the right one: *one parent logs in a few seconds, the other knows, neither has to ask.*
 
 ## Suggested order if you ignore ranks and only ship three things
 

@@ -131,7 +131,7 @@ The plan already resists overbuilding. Be even stricter:
 
 | Idea | Why wait |
 | --- | --- |
-| Cry / audio analysis | Privacy, battery, and a different product |
+| Cry / audio analysis | Privacy, battery, and a different product. Revisit only as on-device, log-labeled cry bouts — [catalog §16](./productization-catalog.md). Not a five-signal translator. |
 | Milk stash inventory | Extra chores; a note is enough |
 | Growth percentiles / WHO charts | Medical framing you correctly want to avoid |
 | Reminders and push | Notification fatigue; PWA push is weak on iOS anyway |
