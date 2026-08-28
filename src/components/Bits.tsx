@@ -95,10 +95,12 @@ export function Glance({
   now: Date;
 }) {
   const feed = mostRecent(events, "feed");
+  const pump = mostRecent(events, "pump");
   const diaper = mostRecent(events, "diaper");
   const sleep = mostRecent(events, "sleep");
   const next = nextBreastSide(events);
   const feedHint = feed ? feedHintText(feed, settings, now, next) : `Next start ${next}`;
+  const pumpHint = pump ? formatClock(pump.time, settings.timezone) : "—";
   const sleepHint = sleep
     ? sleep.endedAt
       ? `nap ${formatDuration((new Date(sleep.endedAt).getTime() - new Date(sleep.time).getTime()) / 1000)}`
@@ -112,6 +114,11 @@ export function Glance({
         <div className="kicker">Last feed</div>
         <strong>{sinceLabel(feed, now, "none yet")}</strong>
         <div className="faint">{feedHint}</div>
+      </div>
+      <div className="cell">
+        <div className="kicker">Last pump</div>
+        <strong>{sinceLabel(pump, now, "none yet")}</strong>
+        <div className="faint">{pumpHint}</div>
       </div>
       <div className="cell">
         <div className="kicker">Last diaper</div>
