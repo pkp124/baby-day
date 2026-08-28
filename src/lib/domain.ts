@@ -30,11 +30,36 @@ export function feedSeconds(data: FeedData, event: CareEvent, now = new Date()) 
   return { left, right, total: 0 };
 }
 
+export type MilkSplit = {
+  formulaMl: number;
+  expressedMl: number;
+};
+
+/** Measured bottle milk in a feed. Nursing has no millilitres. */
+export function milkSplit(data: FeedData): MilkSplit {
+  switch (data.method) {
+    case "formula":
+      return { formulaMl: data.formulaMl ?? data.volumeMl ?? 0, expressedMl: 0 };
+    case "expressed":
+      return { formulaMl: 0, expressedMl: data.expressedMl ?? data.volumeMl ?? 0 };
+    case "mixed": {
+      const formulaMl = data.formulaMl ?? 0;
+      const expressedMl = data.expressedMl ?? 0;
+      if (formulaMl + expressedMl > 0) return { formulaMl, expressedMl };
+      return { formulaMl: data.volumeMl ?? 0, expressedMl: 0 };
+    }
+    case "breast":
+      return { formulaMl: data.formulaMl ?? 0, expressedMl: data.expressedMl ?? 0 };
+    default: {
+      const _exhaustive: never = data.method;
+      return _exhaustive;
+    }
+  }
+}
+
 export function bottleMl(data: FeedData) {
-  if (data.method === "formula") return data.formulaMl ?? data.volumeMl ?? 0;
-  if (data.method === "expressed") return data.expressedMl ?? data.volumeMl ?? 0;
-  if (data.method === "mixed") return (data.formulaMl ?? 0) + (data.expressedMl ?? 0) + (data.volumeMl ?? 0);
-  return data.volumeMl ?? 0;
+  const split = milkSplit(data);
+  return split.formulaMl + split.expressedMl;
 }
 
 export function pumpMl(data: PumpData) {
@@ -77,6 +102,9 @@ export type DayTotals = {
   feeds: number;
   breastFeeds: number;
   bottleMl: number;
+  fedMl: number;
+  formulaMl: number;
+  expressedMl: number;
   pumpMl: number;
   wet: number;
   dirty: number;
@@ -89,6 +117,9 @@ export function dayTotals(events: CareEvent[], start: Date, end: Date, now = new
     feeds: 0,
     breastFeeds: 0,
     bottleMl: 0,
+    fedMl: 0,
+    formulaMl: 0,
+    expressedMl: 0,
     pumpMl: 0,
     wet: 0,
     dirty: 0,
@@ -99,7 +130,11 @@ export function dayTotals(events: CareEvent[], start: Date, end: Date, now = new
       totals.feeds += 1;
       const data = e.data as FeedData;
       if (data.method === "breast" || data.method === "mixed") totals.breastFeeds += 1;
-      totals.bottleMl += bottleMl(data);
+      const split = milkSplit(data);
+      totals.formulaMl += split.formulaMl;
+      totals.expressedMl += split.expressedMl;
+      totals.fedMl += split.formulaMl + split.expressedMl;
+      totals.bottleMl = totals.fedMl;
     } else if (e.type === "pump") {
       totals.pumpMl += pumpMl(e.data as PumpData);
     } else if (e.type === "diaper") {
@@ -116,4 +151,15 @@ export function dayTotals(events: CareEvent[], start: Date, end: Date, now = new
     }
   }
   return totals;
+}
+
+/** Pumped milk minus expressed bottles, across all logged days. Not a counted inventory. */
+export function fridgeEstimateMl(events: CareEvent[]) {
+  let pumped = 0;
+  let expressed = 0;
+  for (const e of liveEvents(events)) {
+    if (e.type === "pump") pumped += pumpMl(e.data as PumpData);
+    else if (e.type === "feed") expressed += milkSplit(e.data as FeedData).expressedMl;
+  }
+  return Math.max(0, pumped - expressed);
 }

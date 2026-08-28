@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useBabyDay, usePwaUpdate } from "./hooks/useBabyDay";
 import { useNow, useWakeLock } from "./hooks/useNow";
 import { Onboarding } from "./components/Onboarding";
-import { Glance, HandoverCard, TempLine, Timeline, WeightLine } from "./components/Bits";
+import { Glance, HandoverCard, MilkCard, TempLine, Timeline, WeightLine } from "./components/Bits";
 import {
   BottleSheet,
   DiaperSheet,
@@ -16,9 +16,9 @@ import {
   WeightSheet,
 } from "./components/Sheets";
 import { SettingsPage } from "./components/Settings";
-import { activeSession, dayTotals, feedSeconds, nextBreastSide } from "./lib/domain";
+import { activeSession, dayTotals, feedSeconds, fridgeEstimateMl, nextBreastSide } from "./lib/domain";
 import { careDayFor, formatCareDayLabel, formatDuration, formatDurationClock } from "./lib/time";
-import { formatMl, displayToMl } from "./lib/units";
+import { displayToMl } from "./lib/units";
 import {
   addBottleToFeed,
   endTimedEvent,
@@ -85,6 +85,7 @@ export default function App() {
     })
     .sort((a, b) => (a.time < b.time ? 1 : -1));
   const totals = dayTotals(store.events, day.start, day.end, now);
+  const fridgeMl = fridgeEstimateMl(store.events);
   const next = nextBreastSide(store.events);
   const syncClass =
     lan.phase === "connected" ? "" : store.sync.status === "error" ? "bad" : store.sync.pending > 0 || store.sync.status === "local" ? "warn" : "";
@@ -181,12 +182,10 @@ export default function App() {
             </button>
           </div>
 
+          <MilkCard today={totals} fridgeMl={fridgeMl} unit={store.settings.volumeUnit} />
+
           <div className="totals">
             <div className="chip">{totals.feeds} feeds</div>
-            <div className="chip">{formatMl(totals.bottleMl, store.settings.volumeUnit)} bottle</div>
-            {totals.pumpMl > 0 ? (
-              <div className="chip">{formatMl(totals.pumpMl, store.settings.volumeUnit)} pump</div>
-            ) : null}
             <div className="chip">{totals.wet} wet</div>
             <div className="chip">{totals.dirty} dirty</div>
             <div className="chip">{formatDuration(totals.sleepSeconds)} sleep</div>

@@ -1,5 +1,5 @@
 import type { CareEvent, FeedData, PumpData, Settings, TempData } from "./types";
-import { bottleMl, dayTotals, feedSeconds, pumpMl } from "./domain";
+import { bottleMl, dayTotals, feedSeconds, fridgeEstimateMl, pumpMl } from "./domain";
 import { careDayFor, formatClock, formatDuration } from "./time";
 import { formatMl, formatTemp, formatWeight } from "./units";
 
@@ -18,8 +18,10 @@ export function pediatricSnapshot(events: CareEvent[], settings: Settings, now =
   lines.push(`As of ${now.toISOString()}`);
   lines.push("");
   lines.push(
-    `Today (care day from ${settings.careDayStartHour}:00): ${today.feeds} feeds, ${formatMl(today.bottleMl, settings.volumeUnit)} bottle, ${today.wet} wet / ${today.dirty} dirty, ${formatDuration(today.sleepSeconds)} sleep`,
+    `Today (care day from ${settings.careDayStartHour}:00): ${today.feeds} feeds, ${formatMl(today.fedMl, settings.volumeUnit)} fed (${formatMl(today.formulaMl, settings.volumeUnit)} formula, ${formatMl(today.expressedMl, settings.volumeUnit)} expressed), ${formatMl(today.pumpMl, settings.volumeUnit)} pumped, ${today.wet} wet / ${today.dirty} dirty, ${formatDuration(today.sleepSeconds)} sleep`,
   );
+  const fridgeMl = fridgeEstimateMl(live);
+  lines.push(`Fridge estimate: ${formatMl(fridgeMl, settings.volumeUnit)} (pumped minus expressed bottles)`);
   if (lastPump && lastPump.type === "pump") {
     lines.push(`Last pump: ${formatMl(pumpMl(lastPump.data as PumpData), settings.volumeUnit)} at ${formatClock(lastPump.time, settings.timezone)}`);
   }
