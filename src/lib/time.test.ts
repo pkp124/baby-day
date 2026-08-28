@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { careDayFor, formatDuration, fromDatetimeLocalValue, fromZonedLocal, minutesAgoIso, spanFromStart, toDatetimeLocalValue } from "./time";
-import { feedSeconds, nextBreastSide } from "./domain";
+import { feedSeconds, fridgeEstimateMl, milkSplit, nextBreastSide } from "./domain";
 import { celsiusToDisplay, displayToCelsius, displayToMl, formatMl, formatTemp, mlToDisplay } from "./units";
 import type { CareEvent, FeedData } from "./types";
 
@@ -59,6 +59,60 @@ describe("breast feed sessions", () => {
       },
     ] as CareEvent[];
     expect(nextBreastSide(events)).toBe("right");
+  });
+});
+
+describe("milk totals", () => {
+  it("splits formula, expressed, and mixed bottles without double-counting volumeMl", () => {
+    expect(milkSplit({ method: "formula", formulaMl: 60 })).toEqual({ formulaMl: 60, expressedMl: 0 });
+    expect(milkSplit({ method: "expressed", expressedMl: 80 })).toEqual({ formulaMl: 0, expressedMl: 80 });
+    expect(milkSplit({ method: "mixed", formulaMl: 30, expressedMl: 40, volumeMl: 70 })).toEqual({
+      formulaMl: 30,
+      expressedMl: 40,
+    });
+    expect(milkSplit({ method: "breast", leftSeconds: 300 })).toEqual({ formulaMl: 0, expressedMl: 0 });
+  });
+
+  it("estimates fridge milk as pumped minus expressed bottles across days", () => {
+    const events = [
+      {
+        deletedAt: null,
+        type: "pump",
+        time: "2026-08-26T10:00:00.000Z",
+        data: { leftMl: 50, rightMl: 50 },
+      },
+      {
+        deletedAt: null,
+        type: "feed",
+        time: "2026-08-27T10:00:00.000Z",
+        data: { method: "expressed", expressedMl: 40 },
+      },
+      {
+        deletedAt: null,
+        type: "feed",
+        time: "2026-08-27T12:00:00.000Z",
+        data: { method: "formula", formulaMl: 60 },
+      },
+    ] as CareEvent[];
+    expect(fridgeEstimateMl(events)).toBe(60);
+  });
+
+  it("does not let the fridge estimate go negative", () => {
+    const events = [
+      {
+        deletedAt: null,
+        type: "pump",
+        time: "2026-08-27T10:00:00.000Z",
+        data: { volumeMl: 30 },
+      },
+      {
+        deletedAt: null,
+        type: "feed",
+        time: "2026-08-27T11:00:00.000Z",
+        data: { method: "expressed", expressedMl: 80 },
+      },
+    ] as CareEvent[];
+    expect(fridgeEstimateMl(events)).toBe(0);
   });
 });
 

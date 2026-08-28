@@ -164,11 +164,14 @@ h1, h2, h3 { font-family: var(--display); font-weight: 640; margin: 0; }
 .action.feed { box-shadow: inset 0 0 0 1px rgba(224, 122, 95, 0.35); }
 .action.sleep { box-shadow: inset 0 0 0 1px rgba(143, 191, 168, 0.35); }
 
-.totals {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin: 16px 0;
+.milk {
+  margin: 16px 0 8px;
+}
+.milk > .kicker {
+  margin-bottom: 2px;
+}
+.milk .glance {
+  margin: 8px 0 0;
 }
 .chip {
   background: var(--bg-2);

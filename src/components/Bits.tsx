@@ -1,5 +1,5 @@
 import type { BreastSide, CareEvent, FeedData, Settings, TempData } from "../lib/types";
-import { bottleMl, feedSeconds, mostRecent, nextBreastSide } from "../lib/domain";
+import { bottleMl, feedSeconds, mostRecent, nextBreastSide, type DayTotals } from "../lib/domain";
 import { formatClock, formatDuration, formatRelative, fromDatetimeLocalValue, minutesAgoIso, toDatetimeLocalValue } from "../lib/time";
 import { formatMl, formatTemp, formatWeight } from "../lib/units";
 import { describeEvent } from "../lib/summary";
@@ -232,4 +232,42 @@ export function TempLine({ events, settings }: { events: CareEvent[]; settings: 
   const last = mostRecent(events, "temp");
   if (!last || last.type !== "temp") return null;
   return <div className="chip">Temp {formatTemp((last.data as TempData).celsius, settings.tempUnit)}</div>;
+}
+
+export function MilkCard({
+  today,
+  fridgeMl,
+  unit,
+}: {
+  today: Pick<DayTotals, "fedMl" | "formulaMl" | "expressedMl" | "pumpMl">;
+  fridgeMl: number;
+  unit: Settings["volumeUnit"];
+}) {
+  return (
+    <section className="milk">
+      <div className="kicker">Milk</div>
+      <div className="glance">
+        <div className="cell">
+          <div className="kicker">Fed</div>
+          <strong>{formatMl(today.fedMl, unit)}</strong>
+          <div className="faint">bottles today</div>
+        </div>
+        <div className="cell">
+          <div className="kicker">Formula</div>
+          <strong>{formatMl(today.formulaMl, unit)}</strong>
+          <div className="faint">today</div>
+        </div>
+        <div className="cell">
+          <div className="kicker">Pumped</div>
+          <strong>{formatMl(today.pumpMl, unit)}</strong>
+          <div className="faint">today</div>
+        </div>
+        <div className="cell">
+          <div className="kicker">Fridge</div>
+          <strong>{formatMl(fridgeMl, unit)}</strong>
+          <div className="faint">pumped minus expressed</div>
+        </div>
+      </div>
+    </section>
+  );
 }

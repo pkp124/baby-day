@@ -75,6 +75,8 @@ describe("summaries", () => {
     const text = pediatricSnapshot(events, settings);
     expect(text).toContain("Arjun — last 48 hours");
     expect(text).toContain("1 wet");
+    expect(text).toContain("fed");
+    expect(text).toContain("Fridge estimate:");
     expect(text).not.toContain("percentile");
   });
 
