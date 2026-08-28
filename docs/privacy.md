@@ -1,6 +1,6 @@
 # Privacy: can data stay on the devices?
 
-Yes. That is already the default. Shared handover between two phones is the part that forces a choice.
+Yes. That is already the default. Shared handover between two phones is the part that forces a choice. The product bar is **privacy first** among simple, usable, and reliable — see [product-plan.md](./product-plan.md).
 
 ## The constraint
 

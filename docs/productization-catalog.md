@@ -2,7 +2,7 @@
 
 Ideas for turning the current family PWA into something other new parents would keep using. Ranked by **usefulness** and **impact to new parents** in the first ~12 weeks — the period this app is actually for.
 
-This is not a build backlog. The existing plan still applies: use the app for a week before adding surface area. The catalog is here so the next ideas are chosen on parent value, not on what other baby trackers ship.
+This is not a build backlog. The bar in [product-plan.md](./product-plan.md) is locked: **simple, usable, reliable, privacy-first**. A high rank is not permission to add surface area. Use the app at night. If a row is not a pain you felt this week, it stays a row.
 
 ## How these are ranked
 
@@ -10,9 +10,9 @@ This is not a build backlog. The existing plan still applies: use the app for a 
 | --- | --- |
 | **Impact** | Harm avoided or relief given: missed care, partner conflict at 3am, lost sleep, visit-day panic, irreversible data loss. |
 | **Usefulness** | Would an exhausted parent actually do this, one-handed, more than once? A feature that is “nice in a review” and unused at night ranks down. |
-| **Fit** | Stays a shared handover layer. Not a coach, not a medical product, not a social network. |
+| **The bar** | Simple, usable, reliable, privacy-first — all four. Fail one, and the idea does not ship, even with a high score. |
 
-Scores are 1–5. **Rank score** = `(impact × 2) + usefulness` so a rare-but-catastrophic miss (data loss, a double feed) still beats a daily gimmick.
+Scores are 1–5. **Rank score** = `(impact × 2) + usefulness` so a rare-but-catastrophic miss (data loss, a double feed) still beats a daily gimmick. The bar is a veto on top of that score.
 
 Business packaging is noted only when it follows from parent value. Ads, data resale, and “AI sleep coach” are not in the catalog.
 
@@ -308,14 +308,19 @@ Three honest products, in order of parent impact:
 
 Voice logging (#9) is a better *input* to all three, not a fourth product. Do not start a cry-translator, coach, social, or shop company. A night-stand, on-device cry bout feature (#17) is an optional extra on the log. The differentiator in the original plan is still the right one: *one parent logs in a few seconds, the other knows, neither has to ask.*
 
-## Suggested order if you ignore ranks and only ship three things
+## What the bar allows next
 
-1. Partner briefing copy (#4) — smallest, immediately useful, even for one phone.
-2. Stale-timer prompt + backup that runs (#3) — so the log stays trustworthy.
-3. Shift baton (#2) or encrypted mailbox (#1) — pick based on whether this family will allow a mailbox.
+Until nightly use of the current app is boring, ignore ranks below this shortlist.
 
-Vitamin D (#6) is the first *new event type* that is worth the home-screen slot. Voice (#9) is the first *input* extra once taps are trusted — hold-to-speak, on-device, with undo. Not cloud dictation.
+| Bar | Next, if anything | Not yet |
+| --- | --- | --- |
+| **Simple** | One more glance line, or one more home tap, not a new screen genre. | Guest roles, pumping stash UI, kitchen mode, twins, solids, charts. |
+| **Usable** | Copy briefing (#4). On-duty flag (#5). Vitamin D as one chip (#6) only if home still fits. | Voice (#9) until taps are trusted. Widgets and watch until the PWA glance is enough. |
+| **Reliable** | Stale-timer prompt + a backup that actually runs (#3). | Anything that adds data we cannot restore. |
+| **Privacy first** | Shift baton (#2) — still on the two phones. Encrypted mailbox (#1) only as ciphertext. | Cloud speech, cry upload, plaintext Supabase, always-on mic. |
+
+Vitamin D is the first *new event type* that might earn a slot. Voice is the first *input* extra, and only as hold-to-speak on-device with undo — not cloud dictation. Cry bouts stay a catalog row.
 
 ## What not to do with this list
 
-Do not implement it as a roadmap of 25 items. Use the app at night. If a row on this catalog is not a pain you felt this week, it stays a row.
+Do not implement it as a roadmap of 26 items. The bar is how we keep the app the thing it is.
