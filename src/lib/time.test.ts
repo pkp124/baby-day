@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { careDayFor, formatDuration, fromZonedLocal, minutesAgoIso } from "./time";
+import { careDayFor, formatDuration, fromDatetimeLocalValue, fromZonedLocal, minutesAgoIso, spanFromStart, toDatetimeLocalValue } from "./time";
 import { feedSeconds, nextBreastSide } from "./domain";
-import { displayToMl, formatMl, mlToDisplay } from "./units";
+import { celsiusToDisplay, displayToCelsius, displayToMl, formatMl, formatTemp, mlToDisplay } from "./units";
 import type { CareEvent, FeedData } from "./types";
 
 describe("care day", () => {
@@ -59,5 +59,39 @@ describe("breast feed sessions", () => {
       },
     ] as CareEvent[];
     expect(nextBreastSide(events)).toBe("right");
+  });
+});
+
+describe("exact clock times", () => {
+  it("round-trips a datetime-local value in UTC", () => {
+    const iso = "2026-08-27T15:40:00.000Z";
+    expect(toDatetimeLocalValue(iso, "UTC")).toBe("2026-08-27T15:40");
+    expect(fromDatetimeLocalValue("2026-08-27T15:40", "UTC")).toBe(iso);
+  });
+
+  it("shows New York civil time for a UTC instant", () => {
+    expect(toDatetimeLocalValue("2026-08-27T15:40:00.000Z", "America/New_York")).toBe("2026-08-27T11:40");
+  });
+
+  it("slides a future-ending breast log so it ends now", () => {
+    const now = new Date("2026-08-27T12:00:00.000Z");
+    const span = spanFromStart("2026-08-27T11:55:00.000Z", 20 * 60, now);
+    expect(span.endedAt).toBe(now.toISOString());
+    expect(span.time).toBe("2026-08-27T11:40:00.000Z");
+  });
+
+  it("keeps a past breast log window in place", () => {
+    const now = new Date("2026-08-27T12:00:00.000Z");
+    const span = spanFromStart("2026-08-27T10:00:00.000Z", 15 * 60, now);
+    expect(span.time).toBe("2026-08-27T10:00:00.000Z");
+    expect(span.endedAt).toBe("2026-08-27T10:15:00.000Z");
+  });
+});
+
+describe("temperature units", () => {
+  it("round-trips Celsius and Fahrenheit", () => {
+    expect(formatTemp(37, "C")).toBe("37.0 °C");
+    expect(celsiusToDisplay(37, "F")).toBe(98.6);
+    expect(Math.round(displayToCelsius(98.6, "F") * 10) / 10).toBe(37);
   });
 });

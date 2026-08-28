@@ -1,9 +1,10 @@
-export type EventType = "feed" | "pump" | "diaper" | "sleep" | "weight" | "note";
+export type EventType = "feed" | "pump" | "diaper" | "sleep" | "weight" | "temp" | "note";
 export type BreastSide = "left" | "right";
 export type FeedMethod = "breast" | "expressed" | "formula" | "mixed";
 export type DiaperKind = "wet" | "dirty" | "both";
 export type VolumeUnit = "ml" | "oz";
 export type WeightUnit = "kg" | "lb";
+export type TempUnit = "C" | "F";
 export type SyncStatus = "pending" | "synced" | "error";
 
 export type FeedData = {
@@ -40,11 +41,16 @@ export type WeightData = {
   note?: string;
 };
 
+export type TempData = {
+  celsius: number;
+  note?: string;
+};
+
 export type NoteData = {
   text: string;
 };
 
-export type EventData = FeedData | PumpData | DiaperData | SleepData | WeightData | NoteData;
+export type EventData = FeedData | PumpData | DiaperData | SleepData | WeightData | TempData | NoteData;
 
 export type CareEvent = {
   id: string;
@@ -74,6 +80,7 @@ export type Settings = {
   careDayStartHour: number;
   volumeUnit: VolumeUnit;
   weightUnit: WeightUnit;
+  tempUnit: TempUnit;
   lastVisitAt: string;
   handoverCursor: string;
   onboardedAt: string;
@@ -90,6 +97,7 @@ export const defaultSettings = (): Settings => ({
   careDayStartHour: 5,
   volumeUnit: "ml",
   weightUnit: "kg",
+  tempUnit: "C",
   lastVisitAt: "",
   handoverCursor: "",
   onboardedAt: "",

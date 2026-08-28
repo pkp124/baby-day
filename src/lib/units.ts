@@ -1,4 +1,4 @@
-import type { VolumeUnit, WeightUnit } from "./types";
+import type { TempUnit, VolumeUnit, WeightUnit } from "./types";
 
 export const ML_PER_OZ = 29.5735;
 export const G_PER_LB = 453.592;
@@ -36,4 +36,19 @@ export function formatWeight(grams: number, unit: WeightUnit) {
   if (unit === "lb") return `${gramsToDisplay(grams, "lb")} lb`;
   const kg = gramsToDisplay(grams, "kg");
   return `${kg.toFixed(kg >= 10 ? 1 : 2)} kg`;
+}
+
+export function celsiusToDisplay(celsius: number, unit: TempUnit) {
+  if (unit === "F") return Math.round(((celsius * 9) / 5 + 32) * 10) / 10;
+  return Math.round(celsius * 10) / 10;
+}
+
+export function displayToCelsius(value: number, unit: TempUnit) {
+  if (unit === "F") return ((value - 32) * 5) / 9;
+  return value;
+}
+
+export function formatTemp(celsius: number, unit: TempUnit) {
+  const n = celsiusToDisplay(celsius, unit);
+  return unit === "F" ? `${n.toFixed(1)} °F` : `${n.toFixed(1)} °C`;
 }

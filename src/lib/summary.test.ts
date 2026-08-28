@@ -27,6 +27,32 @@ describe("summaries", () => {
     expect(text).toContain("Asha");
   });
 
+  it("describes a finished sleep with start, end, and duration", () => {
+    const event = {
+      type: "sleep",
+      time: "2026-08-27T10:00:00.000Z",
+      endedAt: "2026-08-27T10:45:00.000Z",
+      memberName: "Asha",
+      data: {},
+    } as CareEvent;
+    const text = describeEvent(event, settings);
+    expect(text).toContain("Sleep");
+    expect(text).toContain("45m");
+    expect(text).toContain("Asha");
+  });
+
+  it("describes a temperature in the family unit", () => {
+    const event = {
+      type: "temp",
+      time: "2026-08-27T10:00:00.000Z",
+      endedAt: "2026-08-27T10:00:00.000Z",
+      memberName: "Asha",
+      data: { celsius: 37 },
+    } as CareEvent;
+    expect(describeEvent(event, settings)).toContain("37.0 °C");
+    expect(describeEvent(event, { ...settings, tempUnit: "F" })).toContain("98.6 °F");
+  });
+
   it("builds a 48h snapshot with today's totals", () => {
     const events: CareEvent[] = [
       {

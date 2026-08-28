@@ -1,7 +1,7 @@
-import type { CareEvent, FeedData, PumpData, Settings } from "./types";
+import type { CareEvent, FeedData, PumpData, Settings, TempData } from "./types";
 import { bottleMl, dayTotals, feedSeconds, pumpMl } from "./domain";
 import { careDayFor, formatClock, formatDuration } from "./time";
-import { formatMl, formatWeight } from "./units";
+import { formatMl, formatTemp, formatWeight } from "./units";
 
 export function pediatricSnapshot(events: CareEvent[], settings: Settings, now = new Date()) {
   const live = events.filter((e) => !e.deletedAt).sort((a, b) => (a.time < b.time ? 1 : -1));
@@ -10,6 +10,7 @@ export function pediatricSnapshot(events: CareEvent[], settings: Settings, now =
   const day = careDayFor(now, settings.timezone, settings.careDayStartHour);
   const today = dayTotals(live, day.start, day.end, now);
   const lastWeight = live.find((e) => e.type === "weight");
+  const lastTemp = live.find((e) => e.type === "temp");
 
   const lines: string[] = [];
   lines.push(`${settings.babyName || "Baby"} — last 48 hours`);
@@ -20,6 +21,9 @@ export function pediatricSnapshot(events: CareEvent[], settings: Settings, now =
   );
   if (lastWeight && lastWeight.type === "weight") {
     lines.push(`Last weight: ${formatWeight((lastWeight.data as { grams: number }).grams, settings.weightUnit)} at ${formatClock(lastWeight.time, settings.timezone)}`);
+  }
+  if (lastTemp && lastTemp.type === "temp") {
+    lines.push(`Last temperature: ${formatTemp((lastTemp.data as TempData).celsius, settings.tempUnit)} at ${formatClock(lastTemp.time, settings.timezone)}`);
   }
   lines.push("");
   lines.push("Events:");
@@ -63,13 +67,20 @@ export function describeEvent(event: CareEvent, settings: Settings, now = new Da
       return `Diaper ${label}${who}`;
     }
     case "sleep": {
-      const dur = event.endedAt ? formatDuration((new Date(event.endedAt).getTime() - new Date(event.time).getTime()) / 1000) : "in progress";
-      return `Sleep ${dur}${who}`;
+      if (!event.endedAt) return `Sleep in progress${who}`;
+      const dur = formatDuration((new Date(event.endedAt).getTime() - new Date(event.time).getTime()) / 1000);
+      return `Sleep ${formatClock(event.time, settings.timezone)}–${formatClock(event.endedAt, settings.timezone)} · ${dur}${who}`;
     }
     case "weight":
       return `Weight ${formatWeight((event.data as { grams: number }).grams, settings.weightUnit)}${who}`;
+    case "temp":
+      return `Temp ${formatTemp((event.data as TempData).celsius, settings.tempUnit)}${who}`;
     case "note":
       return `Note ${(event.data as { text: string }).text}${who}`;
+    default: {
+      const _exhaustive: never = event.type;
+      return _exhaustive;
+    }
   }
 }
 
