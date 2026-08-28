@@ -1,5 +1,5 @@
-import type { BreastSide, CareEvent, FeedData, PumpData, Settings, TempData } from "../lib/types";
-import { bottleMl, feedSeconds, mostRecent, nextBreastSide, pumpMl } from "../lib/domain";
+import type { BreastSide, CareEvent, FeedData, Settings, TempData } from "../lib/types";
+import { bottleMl, feedSeconds, mostRecent, nextBreastSide } from "../lib/domain";
 import { formatClock, formatDuration, formatRelative, fromDatetimeLocalValue, minutesAgoIso, toDatetimeLocalValue } from "../lib/time";
 import { formatMl, formatTemp, formatWeight } from "../lib/units";
 import { describeEvent } from "../lib/summary";
@@ -100,7 +100,7 @@ export function Glance({
   const sleep = mostRecent(events, "sleep");
   const next = nextBreastSide(events);
   const feedHint = feed ? feedHintText(feed, settings, now, next) : `Next start ${next}`;
-  const pumpHint = pump ? pumpHintText(pump, settings) : "none yet";
+  const pumpHint = pump ? formatClock(pump.time, settings.timezone) : "—";
   const sleepHint = sleep
     ? sleep.endedAt
       ? `nap ${formatDuration((new Date(sleep.endedAt).getTime() - new Date(sleep.time).getTime()) / 1000)}`
@@ -153,18 +153,6 @@ function feedHintText(feed: CareEvent, settings: Settings, now: Date, next: Brea
   if (data.method === "formula") bits.push("formula");
   if (data.method === "expressed") bits.push("expressed");
   return bits.join(" · ") || data.method;
-}
-
-function pumpHintText(pump: CareEvent, settings: Settings) {
-  const data = pump.data as PumpData;
-  const bits: string[] = [formatClock(pump.time, settings.timezone)];
-  if (data.leftMl) bits.push(`L ${formatMl(data.leftMl, settings.volumeUnit)}`);
-  if (data.rightMl) bits.push(`R ${formatMl(data.rightMl, settings.volumeUnit)}`);
-  if (bits.length === 1) {
-    const total = pumpMl(data);
-    if (total) bits.push(formatMl(total, settings.volumeUnit));
-  }
-  return bits.join(" · ");
 }
 
 export function Timeline({
