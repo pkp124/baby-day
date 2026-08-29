@@ -16,6 +16,7 @@ import {
   WeightSheet,
 } from "./components/Sheets";
 import { SettingsPage } from "./components/Settings";
+import { Dock } from "./components/Dock";
 import { activeSession, dayTotals, feedSeconds, fridgeEstimateMl, nextBreastSide, vitaminLabel } from "./lib/domain";
 import { careDayFor, formatCareDayLabel, formatDuration, formatDurationClock } from "./lib/time";
 import { displayToMl } from "./lib/units";
@@ -68,12 +69,20 @@ export default function App() {
 
   if (store.page === "settings") {
     return (
-      <div className="app">
+      <div className={needRefresh ? "app has-update" : "app"}>
         <SettingsPage
           settings={store.settings}
           sync={store.sync}
-          onBack={() => store.setPage("home")}
+          needRefresh={needRefresh}
+          onReload={reload}
           onRefreshSync={() => void store.refreshSync()}
+        />
+        <Dock
+          page="settings"
+          onHome={() => store.setPage("home")}
+          onSettings={() => store.setPage("settings")}
+          needRefresh={needRefresh}
+          onReload={reload}
         />
       </div>
     );
@@ -107,15 +116,7 @@ export default function App() {
                 : "Synced";
 
   return (
-    <div className="app">
-      {needRefresh && (
-        <div className="update-banner">
-          New version ready
-          <button type="button" onClick={() => reload()}>
-            Reload
-          </button>
-        </div>
-      )}
+    <div className={needRefresh ? "app has-update" : "app"}>
       <div className="app-grid">
         <div>
           <header className="topbar">
@@ -123,9 +124,6 @@ export default function App() {
               <div className="eyebrow">{formatCareDayLabel(day, store.settings.timezone, store.settings.careDayStartHour, now)}</div>
               <h1 className="baby-name">{store.settings.babyName}</h1>
             </div>
-            <button className="icon-btn" type="button" onClick={() => store.setPage("settings")} aria-label="Settings">
-              ⚙
-            </button>
           </header>
           <button className={`pill-btn ${syncClass}`} type="button" onClick={() => store.setPage("settings")}>
             <span className="dot" />
@@ -374,6 +372,13 @@ export default function App() {
           )}
         </div>
       )}
+      <Dock
+        page="home"
+        onHome={() => store.setPage("home")}
+        onSettings={() => store.setPage("settings")}
+        needRefresh={needRefresh}
+        onReload={reload}
+      />
     </div>
   );
 }
