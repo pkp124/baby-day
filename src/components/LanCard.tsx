@@ -143,8 +143,9 @@ export function LanCard() {
         <details className="advanced" open={qrOpen} onToggle={(e) => setQrOpen(e.currentTarget.open)}>
           <summary>Use a QR code instead</summary>
           <div className="stack" style={{ marginTop: 10 }}>
+            {lan.offerQr ? <img className="qr" src={lan.offerQr} alt="Pairing QR code" /> : null}
+            {lan.answerQr ? <img className="qr" src={lan.answerQr} alt="Answer QR code" /> : null}
             <p className="faint">QR still works if a phone is offline. Android cameras often struggle with it — prefer the passkey.</p>
-            {passkeyMode && lan.offerQr ? <img className="qr" src={lan.offerQr} alt="Pairing QR code" /> : null}
             {lan.phase !== "host-offer" && lan.phase !== "guest-wait" && lan.phase !== "guest-answer" && (
               <button className="secondary" type="button" onClick={() => void startLanHost()}>
                 This phone shows the first QR
