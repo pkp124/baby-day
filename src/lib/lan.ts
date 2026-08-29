@@ -2,12 +2,17 @@ import { useSyncExternalStore } from "react";
 import { toDataURL } from "qrcode";
 import { db, getSettings, onEventCommit, putEvent, saveSettings } from "./db";
 import { digestOf, eventsNeeded, hostOnlySdp, shouldApplyIncoming } from "./lanMerge";
+import { generatePasskey, isValidPasskey, normalizePasskey } from "./pairCode";
+import { openPairMailbox, type PairMailbox, type PairWire } from "./pairMailbox";
 import type { CareEvent } from "./types";
 
-export type LanPhase = "idle" | "host-offer" | "guest-answer" | "connected" | "error";
+export type LanPhase = "idle" | "host-offer" | "guest-wait" | "guest-answer" | "connected" | "error";
+export type PairingMode = "off" | "passkey" | "qr";
 
 export type LanState = {
   phase: LanPhase;
+  pairing: PairingMode;
+  passkey: string;
   offerText: string;
   answerText: string;
   offerQr: string;
@@ -19,6 +24,8 @@ export type LanState = {
 
 const idle: LanState = {
   phase: "idle",
+  pairing: "off",
+  passkey: "",
   offerText: "",
   answerText: "",
   offerQr: "",
@@ -34,6 +41,13 @@ let pc: RTCPeerConnection | null = null;
 let channel: RTCDataChannel | null = null;
 let role: "host" | "guest" | null = null;
 let unhook: (() => void) | null = null;
+let mailbox: PairMailbox | null = null;
+let lastOfferSignal = "";
+let lastOfferName = "";
+let remoteSet = false;
+let guestBusy = false;
+let pairTimer: number | null = null;
+let pairingLock = false;
 
 function emit(patch: Partial<LanState>) {
   state = { ...state, ...patch };
@@ -195,11 +209,13 @@ function bindChannel(next: RTCDataChannel) {
   channel = next;
   next.binaryType = "arraybuffer";
   next.onopen = () => {
+    clearPairTimer();
+    closeMailbox();
     emit({ phase: "connected", error: "", lastSyncAt: new Date().toISOString() });
     void hello();
   };
   next.onclose = () => {
-    if (state.phase === "connected") emit({ phase: "idle", error: "" });
+    if (state.phase === "connected") emit({ phase: "idle", pairing: "off", passkey: "", error: "" });
   };
   next.onmessage = (ev) => {
     try {
@@ -218,7 +234,34 @@ function watchLocal() {
   });
 }
 
-function teardown() {
+function closeMailbox() {
+  mailbox?.close();
+  mailbox = null;
+  lastOfferSignal = "";
+  lastOfferName = "";
+}
+
+function clearPairTimer() {
+  if (pairTimer != null) window.clearTimeout(pairTimer);
+  pairTimer = null;
+}
+
+function armPairTimeout() {
+  clearPairTimer();
+  pairTimer = window.setTimeout(() => {
+    if (state.phase === "connected") return;
+    closeMailbox();
+    teardownPeer();
+    guestBusy = false;
+    emit({
+      ...idle,
+      phase: "error",
+      error: "That passkey timed out. Show or enter a new one.",
+    });
+  }, 90_000);
+}
+
+function teardownPeer() {
   unhook?.();
   unhook = null;
   channel?.close();
@@ -226,16 +269,69 @@ function teardown() {
   channel = null;
   pc = null;
   role = null;
+  remoteSet = false;
+}
+
+function pairError(err: unknown) {
+  const message = err instanceof Error ? err.message : "Could not use that passkey";
+  closeMailbox();
+  teardownPeer();
+  guestBusy = false;
+  clearPairTimer();
+  emit({ ...idle, phase: "error", error: message });
 }
 
 export function disconnectLan() {
-  teardown();
+  clearPairTimer();
+  closeMailbox();
+  teardownPeer();
+  guestBusy = false;
   const partner = state.partnerName;
   emit({ ...idle, partnerName: partner });
 }
 
 export async function startLanHost() {
-  teardown();
+  closeMailbox();
+  clearPairTimer();
+  guestBusy = false;
+  await beginHostOffer("qr");
+}
+
+export async function startLanHostPasskey() {
+  if (pairingLock) return;
+  pairingLock = true;
+  closeMailbox();
+  teardownPeer();
+  guestBusy = false;
+  const passkey = generatePasskey();
+  emit({
+    phase: "host-offer",
+    pairing: "passkey",
+    passkey,
+    offerText: "",
+    offerQr: "",
+    answerText: "",
+    answerQr: "",
+    error: "",
+    partnerName: "",
+  });
+  armPairTimeout();
+  try {
+    mailbox = await openPairMailbox(passkey, onHostPair, (err) => pairError(err));
+    await beginHostOffer("passkey");
+    const settings = await getSettings();
+    lastOfferSignal = getLanState().offerText;
+    lastOfferName = settings.caregiverName || "Parent";
+    await mailbox.publish({ k: "offer", signal: lastOfferSignal, name: lastOfferName });
+  } catch (err) {
+    pairError(err);
+  } finally {
+    pairingLock = false;
+  }
+}
+
+async function beginHostOffer(pairing: PairingMode) {
+  teardownPeer();
   role = "host";
   watchLocal();
   const settings = await getSettings();
@@ -246,8 +342,10 @@ export async function startLanHost() {
   const offerText = await localPayload("offer", settings.caregiverName || "Parent", pc);
   emit({
     phase: "host-offer",
+    pairing,
     offerText,
     offerQr: await toQr(offerText),
+    passkey: pairing === "passkey" ? state.passkey : "",
     answerText: "",
     answerQr: "",
     error: "",
@@ -255,16 +353,83 @@ export async function startLanHost() {
   });
 }
 
+async function onHostPair(msg: PairWire) {
+  if (msg.k === "hello" && lastOfferSignal && mailbox) {
+    void mailbox.publish({ k: "offer", signal: lastOfferSignal, name: lastOfferName }).catch((err: unknown) => pairError(err));
+    return;
+  }
+  if (msg.k === "answer" && msg.signal) {
+    try {
+      await acceptLanAnswer(msg.signal);
+    } catch (err) {
+      pairError(err);
+    }
+  }
+}
+
 export async function acceptLanAnswer(raw: string) {
   if (!pc) throw new Error("Start this phone first");
+  if (remoteSet) return;
   const signal = await decodeSignal(raw);
   if (signal.t !== "answer") throw new Error("That code is not an answer");
   await pc.setRemoteDescription({ type: "answer", sdp: hostOnlySdp(signal.sdp) });
+  remoteSet = true;
   emit({ partnerName: signal.name || state.partnerName });
 }
 
 export async function startLanGuest(raw: string) {
-  teardown();
+  closeMailbox();
+  clearPairTimer();
+  guestBusy = false;
+  await beginGuestAnswer(raw, "qr");
+}
+
+export async function joinLanPasskey(raw: string) {
+  const passkey = normalizePasskey(raw);
+  if (!isValidPasskey(passkey)) throw new Error("Enter the 6-digit passkey");
+  if (pairingLock) throw new Error("This phone is already linking");
+  pairingLock = true;
+  closeMailbox();
+  teardownPeer();
+  guestBusy = false;
+  emit({
+    phase: "guest-wait",
+    pairing: "passkey",
+    passkey,
+    offerText: "",
+    offerQr: "",
+    answerText: "",
+    answerQr: "",
+    error: "",
+    partnerName: "",
+  });
+  armPairTimeout();
+  try {
+    mailbox = await openPairMailbox(passkey, onGuestPair, (err) => pairError(err));
+    await mailbox.publish({ k: "hello" });
+  } catch (err) {
+    pairError(err);
+    throw err instanceof Error ? err : new Error("Could not use that passkey");
+  } finally {
+    pairingLock = false;
+  }
+}
+
+async function onGuestPair(msg: PairWire) {
+  if (msg.k !== "offer" || !msg.signal || guestBusy) return;
+  guestBusy = true;
+  try {
+    await beginGuestAnswer(msg.signal, "passkey");
+    const answerText = getLanState().answerText;
+    const settings = await getSettings();
+    await mailbox?.publish({ k: "answer", signal: answerText, name: settings.caregiverName || "Parent" });
+  } catch (err) {
+    pairError(err);
+  }
+}
+
+async function beginGuestAnswer(raw: string, pairing: PairingMode) {
+  teardownPeer();
   role = "guest";
   watchLocal();
   const settings = await getSettings();
@@ -278,8 +443,10 @@ export async function startLanGuest(raw: string) {
   const answerText = await localPayload("answer", settings.caregiverName || "Parent", pc);
   emit({
     phase: "guest-answer",
+    pairing,
     answerText,
     answerQr: await toQr(answerText),
+    passkey: pairing === "passkey" ? state.passkey : "",
     offerText: "",
     offerQr: "",
     error: "",

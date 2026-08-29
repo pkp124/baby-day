@@ -33,7 +33,7 @@ Keep this as the default. Never silently create a cloud family.
 
 ### B. Local Wi-Fi link (built)
 
-Settings → **This Wi-Fi**. One phone shows a QR (WebRTC offer), the other scans and shows an answer QR. ICE is **host-only** (no STUN, no TURN), so the care events travel on the LAN between the two phones. Pairing codes never go to a server either.
+Settings → **This Wi-Fi**. One phone shows a 6-digit passkey, the other types it. That passkey is only used to match the two phones: a short-lived public mailbox (default `ntfy.sh`) carries the WebRTC handshake, which includes local IPs. Care events are not in that handshake. ICE is **host-only** (no STUN, no TURN), so the logs then travel on the LAN between the two phones. QR codes remain as a fully offline fallback if a phone has no internet.
 
 Both apps must stay open on the same network. If someone locks their phone, the link drops; the other phone already has a full local copy of everything received so far. Link again in the evening to catch up. Guest Wi-Fi with AP isolation will fail.
 

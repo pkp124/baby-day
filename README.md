@@ -61,7 +61,7 @@ The care day starts at 5:00 local (configurable), not midnight. Units are ml/oz,
 3. **Sleep** opens a sheet: start now, or save a nap with started and woke times. If a sleep timer is already running, the home button ends it.
 4. **Pump**, **Diaper**, **Temp**, **Weight**, and **Note** are one sheet each.
 5. Tap a timeline row to edit time, breast minutes, notes, or delete (with undo).
-6. Settings: units, care-day start hour, 48-hour copy for the pediatrician, JSON/CSV backup. **This Wi-Fi** links the other parent’s phone on the home network with a QR code — events stay on the two phones.
+6. Settings: units, care-day start hour, 48-hour copy for the pediatrician, JSON/CSV backup. **This Wi-Fi** links the other parent’s phone on the home network with a 6-digit passkey — events stay on the two phones. QR codes remain as a fallback.
 7. iOS: Share → Add to Home Screen. Android: Install app.
 
 Names stay on the phone so the timeline can say who logged what.
@@ -70,7 +70,7 @@ Names stay on the phone so the timeline can say who logged what.
 
 Default: everything is on **this phone** (IndexedDB). Nothing is uploaded.
 
-**This Wi-Fi** (Settings) copies events to the other phone over the local network only. Both apps must be open on the same network. Link again when you are both home to catch up.
+**This Wi-Fi** (Settings) copies events to the other phone over the local network only. One parent shows a 6-digit passkey, the other types it. Both apps must be open on the same network. Link again when you are both home to catch up.
 
 Optional cloud sync exists but stores events in a form the host can read. **Do not turn it on for real baby data** until on-device encryption exists.
 

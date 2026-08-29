@@ -92,15 +92,17 @@ export default function App() {
   const syncLabel =
     lan.phase === "connected"
       ? `Wi-Fi · ${lan.partnerName || "linked"}`
-      : store.sync.status === "local"
-        ? "On this phone"
-        : store.sync.pending > 0
-          ? `${store.sync.pending} waiting to sync`
-          : store.sync.status === "needs-login"
-            ? "Sign in to share"
-            : store.sync.status === "error"
-              ? "Sync issue"
-              : "Synced";
+      : lan.phase === "host-offer" || lan.phase === "guest-wait" || lan.phase === "guest-answer"
+        ? "Wi-Fi · linking…"
+        : store.sync.status === "local"
+          ? "On this phone"
+          : store.sync.pending > 0
+            ? `${store.sync.pending} waiting to sync`
+            : store.sync.status === "needs-login"
+              ? "Sign in to share"
+              : store.sync.status === "error"
+                ? "Sync issue"
+                : "Synced";
 
   return (
     <div className="app">
