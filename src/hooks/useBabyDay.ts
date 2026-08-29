@@ -115,5 +115,10 @@ export function useBabyDay() {
 
 export function usePwaUpdate() {
   const { needRefresh, updateServiceWorker } = useRegisterSW({ immediate: false });
-  return { needRefresh: Boolean(needRefresh[0]), reload: () => updateServiceWorker(true) };
+  const pending = Boolean(needRefresh[0]);
+  const reload = () => {
+    if (pending) void updateServiceWorker(true);
+    else window.location.reload();
+  };
+  return { needRefresh: pending, reload };
 }

@@ -11,12 +11,14 @@ import { db } from "../lib/db";
 export function SettingsPage({
   settings,
   sync,
-  onBack,
+  needRefresh,
+  onReload,
   onRefreshSync,
 }: {
   settings: Settings;
   sync: SyncState;
-  onBack: () => void;
+  needRefresh: boolean;
+  onReload: () => void;
   onRefreshSync: () => void;
 }) {
   const [invite, setInvite] = useState("");
@@ -64,15 +66,25 @@ export function SettingsPage({
 
   return (
     <div className="settings">
-      <div className="topbar">
+      <header className="topbar">
         <div>
           <div className="eyebrow">Family</div>
           <h1 className="baby-name">Settings</h1>
         </div>
-        <button className="icon-btn" type="button" onClick={onBack} aria-label="Back">
-          ←
-        </button>
-      </div>
+      </header>
+
+      <section className="card quiet">
+        <h2>This phone</h2>
+        <p className="muted">
+          An iPhone home-screen app has no browser refresh. Use this if the screen looks stuck, or when a new version is
+          waiting.
+        </p>
+        <div className="stack">
+          <button className="secondary" type="button" onClick={onReload}>
+            {needRefresh ? "Reload new version" : "Reload app"}
+          </button>
+        </div>
+      </section>
 
       <section className="card quiet">
         <h2>Baby</h2>
