@@ -77,7 +77,21 @@ describe("summaries", () => {
     expect(text).toContain("1 wet");
     expect(text).toContain("fed");
     expect(text).toContain("Fridge estimate:");
+    expect(text).toContain("Vitamin D not given today");
+    expect(text).toContain("Vitamin K not given today");
     expect(text).not.toContain("percentile");
+  });
+
+  it("describes vitamin doses by name only", () => {
+    const event = {
+      type: "vitaminD",
+      time: "2026-08-29T08:00:00.000Z",
+      endedAt: "2026-08-29T08:00:00.000Z",
+      memberName: "Asha",
+      data: {},
+    } as CareEvent;
+    expect(describeEvent(event, settings)).toBe("Vitamin D · Asha");
+    expect(describeEvent({ ...event, type: "vitaminK" }, settings)).toBe("Vitamin K · Asha");
   });
 
   it("includes last pump time in the 48h snapshot", () => {
@@ -102,5 +116,30 @@ describe("summaries", () => {
     const text = pediatricSnapshot(events, settings, new Date("2026-08-28T12:00:00.000Z"));
     expect(text).toContain("Last pump:");
     expect(text).toContain("75 ml");
+    expect(text).toContain("Vitamin D not given today");
+  });
+
+  it("records today's vitamin times in the 48h snapshot", () => {
+    const events: CareEvent[] = [
+      {
+        id: "vd",
+        familyId: "f",
+        babyId: "b",
+        memberId: "m",
+        memberName: "Asha",
+        type: "vitaminD",
+        time: "2026-08-28T09:10:00.000Z",
+        endedAt: "2026-08-28T09:10:00.000Z",
+        createdAt: "2026-08-28T09:10:00.000Z",
+        updatedAt: "2026-08-28T09:10:00.000Z",
+        rev: 1,
+        deletedAt: null,
+        data: {},
+        syncStatus: "pending",
+      },
+    ];
+    const text = pediatricSnapshot(events, settings, new Date("2026-08-28T12:00:00.000Z"));
+    expect(text).toContain("Vitamin D given at");
+    expect(text).toContain("Vitamin K not given today");
   });
 });

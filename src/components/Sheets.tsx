@@ -10,8 +10,10 @@ import type {
   Settings,
   SleepData,
   TempData,
+  VitaminData,
   WeightData,
 } from "../lib/types";
+import { vitaminLabel } from "../lib/domain";
 import { DurationChips, VolumeChips, WhenField } from "./Bits";
 import { displayToCelsius, displayToGrams, displayToMl, formatWeight, celsiusToDisplay } from "../lib/units";
 import { formatDuration, orderedInstants } from "../lib/time";
@@ -310,6 +312,32 @@ export function NoteSheet({ timezone, onSave }: { timezone: string; onSave: (tex
   );
 }
 
+function editorTypeLabel(event: CareEvent) {
+  switch (event.type) {
+    case "feed":
+      return "feed";
+    case "pump":
+      return "pump";
+    case "diaper":
+      return "diaper";
+    case "sleep":
+      return "sleep";
+    case "weight":
+      return "weight";
+    case "temp":
+      return "temperature";
+    case "note":
+      return "note";
+    case "vitaminD":
+    case "vitaminK":
+      return vitaminLabel(event.type);
+    default: {
+      const _exhaustive: never = event.type;
+      return _exhaustive;
+    }
+  }
+}
+
 export function EventEditor({
   event,
   settings,
@@ -379,6 +407,10 @@ export function EventEditor({
       case "pump":
         await updateEvent(event.id, { time: whenIso, endedAt: whenIso, data: { ...(event.data as PumpData), note } });
         break;
+      case "vitaminD":
+      case "vitaminK":
+        await updateEvent(event.id, { time: whenIso, endedAt: whenIso, data: { ...(event.data as VitaminData), note } });
+        break;
       default: {
         const _exhaustive: never = event.type;
         void _exhaustive;
@@ -398,7 +430,7 @@ export function EventEditor({
   return (
     <>
       <h2>Edit</h2>
-      <p className="muted">{event.type === "temp" ? "temperature" : event.type}</p>
+      <p className="muted">{editorTypeLabel(event)}</p>
       <WhenField timezone={settings.timezone} valueIso={whenIso} onChangeIso={setWhenIso} label={event.type === "sleep" ? "Started" : "When"} />
       {event.type === "sleep" && (endedIso || event.endedAt) ? (
         <WhenField timezone={settings.timezone} valueIso={endedIso || event.endedAt || whenIso} onChangeIso={setEndedIso} label="Woke" />

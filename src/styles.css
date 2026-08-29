@@ -178,6 +178,35 @@ h1, h2, h3 { font-family: var(--display); font-weight: 640; margin: 0; }
 .kicker { color: var(--faint); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.06em; }
 .glance strong { display: block; margin-top: 6px; font-size: 0.98rem; }
 
+.vitamins {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin: 0 0 16px;
+}
+.vitamin {
+  border-radius: 18px;
+  padding: 12px 10px;
+  text-align: left;
+  min-height: 86px;
+  border: 1px solid transparent;
+}
+.vitamin strong { display: block; margin-top: 6px; font-size: 0.98rem; }
+.vitamin.due {
+  background: #4a1f1f;
+  border-color: rgba(224, 138, 138, 0.55);
+  color: #ffd6d6;
+}
+.vitamin.due .kicker,
+.vitamin.due .faint { color: #f0b4b4; }
+.vitamin.given {
+  background: #1f3a28;
+  border-color: rgba(156, 191, 138, 0.5);
+  color: #d7f0c8;
+}
+.vitamin.given .kicker,
+.vitamin.given .faint { color: #a8c89a; }
+
 .actions {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -282,6 +311,8 @@ h1, h2, h3 { font-family: var(--display); font-weight: 640; margin: 0; }
 .mark.pump { background: var(--pump); }
 .mark.weight { background: var(--weight); }
 .mark.temp { background: var(--temp); }
+.mark.vitaminD,
+.mark.vitaminK { background: #d4a574; }
 
 .sheet-backdrop {
   position: fixed;

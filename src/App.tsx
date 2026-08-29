@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useBabyDay, usePwaUpdate } from "./hooks/useBabyDay";
 import { useNow, useWakeLock } from "./hooks/useNow";
 import { Onboarding } from "./components/Onboarding";
-import { Glance, HandoverCard, MilkCard, TempLine, Timeline, WeightLine } from "./components/Bits";
+import { Glance, HandoverCard, MilkCard, TempLine, Timeline, VitaminCards, WeightLine } from "./components/Bits";
 import {
   BottleSheet,
   DiaperSheet,
@@ -16,7 +16,7 @@ import {
   WeightSheet,
 } from "./components/Sheets";
 import { SettingsPage } from "./components/Settings";
-import { activeSession, dayTotals, feedSeconds, fridgeEstimateMl, nextBreastSide } from "./lib/domain";
+import { activeSession, dayTotals, feedSeconds, fridgeEstimateMl, nextBreastSide, vitaminLabel } from "./lib/domain";
 import { careDayFor, formatCareDayLabel, formatDuration, formatDurationClock } from "./lib/time";
 import { displayToMl } from "./lib/units";
 import {
@@ -29,7 +29,9 @@ import {
   logPump,
   logSleep,
   logTemperature,
+  logVitamin,
   logWeight,
+  removeEvent,
   restoreEvent,
   startBreastFeed,
   startSleep,
@@ -144,6 +146,22 @@ export default function App() {
           )}
 
           <Glance events={store.events} settings={store.settings} now={now} />
+
+          <VitaminCards
+            events={store.events}
+            settings={store.settings}
+            start={day.start}
+            end={day.end}
+            onGive={(type) =>
+              void logVitamin(type).then((event) =>
+                store.flash(`${vitaminLabel(type)} saved`, () => void removeEvent(event.id)),
+              )
+            }
+            onOpen={(event) => {
+              setEditing(event);
+              setSheet("event");
+            }}
+          />
 
           <div className="actions">
             <button className="action wide feed" type="button" onClick={() => setSheet("feed")}>

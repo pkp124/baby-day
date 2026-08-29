@@ -1,5 +1,5 @@
-import type { BreastSide, CareEvent, FeedData, Settings, TempData } from "../lib/types";
-import { bottleMl, feedSeconds, mostRecent, nextBreastSide, type DayTotals } from "../lib/domain";
+import type { BreastSide, CareEvent, FeedData, Settings, TempData, VitaminType } from "../lib/types";
+import { bottleMl, feedSeconds, latestInRange, mostRecent, nextBreastSide, vitaminLabel, type DayTotals } from "../lib/domain";
 import { formatClock, formatDuration, formatRelative, fromDatetimeLocalValue, minutesAgoIso, toDatetimeLocalValue } from "../lib/time";
 import { formatMl, formatTemp, formatWeight } from "../lib/units";
 import { describeEvent } from "../lib/summary";
@@ -232,6 +232,66 @@ export function TempLine({ events, settings }: { events: CareEvent[]; settings: 
   const last = mostRecent(events, "temp");
   if (!last || last.type !== "temp") return null;
   return <div className="chip">Temp {formatTemp((last.data as TempData).celsius, settings.tempUnit)}</div>;
+}
+
+export function VitaminCards({
+  events,
+  settings,
+  start,
+  end,
+  onGive,
+  onOpen,
+}: {
+  events: CareEvent[];
+  settings: Settings;
+  start: Date;
+  end: Date;
+  onGive: (type: VitaminType) => void;
+  onOpen: (event: CareEvent) => void;
+}) {
+  return (
+    <div className="vitamins">
+      <VitaminCard type="vitaminD" events={events} settings={settings} start={start} end={end} onGive={onGive} onOpen={onOpen} />
+      <VitaminCard type="vitaminK" events={events} settings={settings} start={start} end={end} onGive={onGive} onOpen={onOpen} />
+    </div>
+  );
+}
+
+function VitaminCard({
+  type,
+  events,
+  settings,
+  start,
+  end,
+  onGive,
+  onOpen,
+}: {
+  type: VitaminType;
+  events: CareEvent[];
+  settings: Settings;
+  start: Date;
+  end: Date;
+  onGive: (type: VitaminType) => void;
+  onOpen: (event: CareEvent) => void;
+}) {
+  const given = latestInRange(events, type, start, end);
+  const label = vitaminLabel(type);
+  if (given) {
+    return (
+      <button className="vitamin given" type="button" onClick={() => onOpen(given)} aria-label={`${label} given, edit`}>
+        <div className="kicker">{label}</div>
+        <strong>Given</strong>
+        <div className="faint">{formatClock(given.time, settings.timezone)}</div>
+      </button>
+    );
+  }
+  return (
+    <button className="vitamin due" type="button" onClick={() => onGive(type)} aria-label={`${label} not given, tap to log`}>
+      <div className="kicker">{label}</div>
+      <strong>Not given</strong>
+      <div className="faint">Tap to log</div>
+    </button>
+  );
 }
 
 export function MilkCard({
