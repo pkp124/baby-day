@@ -1,4 +1,4 @@
-import type { BreastSide, CareEvent, DiaperKind, EventData, FeedData, FeedMethod, PumpData, Settings, SleepData } from "./types";
+import type { BreastSide, CareEvent, DiaperKind, EventData, FeedData, FeedMethod, PumpData, Settings, SleepData, VitaminData, VitaminType } from "./types";
 import { db, enqueue, getSettings, putEvent, saveSettings, tombstoneEvent } from "./db";
 import { minutesAgoIso, orderedInstants, spanFromStart } from "./time";
 
@@ -224,6 +224,16 @@ export async function logNote(text: string, when?: LogTime) {
   const settings = await getSettings();
   const time = resolveTime(when);
   const event = baseEvent(settings, "note", { text }, time, time);
+  await putEvent(event);
+  buzz();
+  return event;
+}
+
+export async function logVitamin(type: VitaminType, when?: LogTime, note?: string) {
+  const settings = await getSettings();
+  const time = resolveTime(when);
+  const data: VitaminData = note ? { note } : {};
+  const event = baseEvent(settings, type, data, time, time);
   await putEvent(event);
   buzz();
   return event;

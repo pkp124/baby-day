@@ -1,4 +1,5 @@
-export type EventType = "feed" | "pump" | "diaper" | "sleep" | "weight" | "temp" | "note";
+export type EventType = "feed" | "pump" | "diaper" | "sleep" | "weight" | "temp" | "note" | "vitaminD" | "vitaminK";
+export type VitaminType = Extract<EventType, "vitaminD" | "vitaminK">;
 export type BreastSide = "left" | "right";
 export type FeedMethod = "breast" | "expressed" | "formula" | "mixed";
 export type DiaperKind = "wet" | "dirty" | "both";
@@ -50,7 +51,11 @@ export type NoteData = {
   text: string;
 };
 
-export type EventData = FeedData | PumpData | DiaperData | SleepData | WeightData | TempData | NoteData;
+export type VitaminData = {
+  note?: string;
+};
+
+export type EventData = FeedData | PumpData | DiaperData | SleepData | WeightData | TempData | NoteData | VitaminData;
 
 export type CareEvent = {
   id: string;

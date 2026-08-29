@@ -1,4 +1,4 @@
-import type { BreastSide, CareEvent, FeedData, PumpData } from "./types";
+import type { BreastSide, CareEvent, FeedData, PumpData, VitaminType } from "./types";
 import { eventDurationSeconds } from "./time";
 
 export function liveEvents(events: CareEvent[]) {
@@ -98,6 +98,26 @@ export function inRange(events: CareEvent[], start: Date, end: Date) {
   });
 }
 
+/** Most recent live event of a type inside a care-day window. */
+export function latestInRange(events: CareEvent[], type: CareEvent["type"], start: Date, end: Date) {
+  return inRange(events, start, end)
+    .filter((e) => e.type === type)
+    .sort((a, b) => (a.time < b.time ? 1 : -1))[0];
+}
+
+export function vitaminLabel(type: VitaminType) {
+  switch (type) {
+    case "vitaminD":
+      return "Vitamin D";
+    case "vitaminK":
+      return "Vitamin K";
+    default: {
+      const _exhaustive: never = type;
+      return _exhaustive;
+    }
+  }
+}
+
 export type DayTotals = {
   feeds: number;
   breastFeeds: number;
@@ -143,7 +163,7 @@ export function dayTotals(events: CareEvent[], start: Date, end: Date, now = new
       if (kind === "dirty" || kind === "both") totals.dirty += 1;
     } else if (e.type === "sleep") {
       totals.sleepSeconds += eventDurationSeconds(e.time, e.endedAt, now);
-    } else if (e.type === "weight" || e.type === "temp" || e.type === "note") {
+    } else if (e.type === "weight" || e.type === "temp" || e.type === "note" || e.type === "vitaminD" || e.type === "vitaminK") {
       continue;
     } else {
       const _exhaustive: never = e.type;

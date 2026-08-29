@@ -1,5 +1,5 @@
 import type { CareEvent, FeedData, PumpData, Settings, TempData } from "./types";
-import { bottleMl, dayTotals, feedSeconds, fridgeEstimateMl, pumpMl } from "./domain";
+import { bottleMl, dayTotals, feedSeconds, fridgeEstimateMl, latestInRange, pumpMl, vitaminLabel } from "./domain";
 import { careDayFor, formatClock, formatDuration } from "./time";
 import { formatMl, formatTemp, formatWeight } from "./units";
 
@@ -30,6 +30,14 @@ export function pediatricSnapshot(events: CareEvent[], settings: Settings, now =
   }
   if (lastTemp && lastTemp.type === "temp") {
     lines.push(`Last temperature: ${formatTemp((lastTemp.data as TempData).celsius, settings.tempUnit)} at ${formatClock(lastTemp.time, settings.timezone)}`);
+  }
+  for (const type of ["vitaminD", "vitaminK"] as const) {
+    const given = latestInRange(live, type, day.start, day.end);
+    lines.push(
+      given
+        ? `${vitaminLabel(type)} given at ${formatClock(given.time, settings.timezone)}`
+        : `${vitaminLabel(type)} not given today`,
+    );
   }
   lines.push("");
   lines.push("Events:");
@@ -83,6 +91,9 @@ export function describeEvent(event: CareEvent, settings: Settings, now = new Da
       return `Temp ${formatTemp((event.data as TempData).celsius, settings.tempUnit)}${who}`;
     case "note":
       return `Note ${(event.data as { text: string }).text}${who}`;
+    case "vitaminD":
+    case "vitaminK":
+      return `${vitaminLabel(event.type)}${who}`;
     default: {
       const _exhaustive: never = event.type;
       return _exhaustive;

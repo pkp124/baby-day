@@ -41,11 +41,12 @@ The app is **local-first**. Care events stay on the phone unless you turn on sha
 | **Sleep** | Start a timer, or log a finished nap with started and woke times |
 | **Temp** | Temperature in °C or °F |
 | **Weight** | Optional check-in |
+| **Vitamin D / K** | Time given today. Cards are red until logged, green after. |
 | **Note** | Anything else |
 
 Every sheet has **Now / 10m / 20m / 1h** chips and a date-and-time picker, so you can log the real clock time.
 
-The home glance shows last feed, last pump, last diaper, and time awake. A **Milk** card splits:
+The home glance shows last feed, last pump, last diaper, and time awake. **Vitamin D** and **Vitamin K** sit under that: red if not given this care day, green with the clock time once they are. Tap a red card to log now; tap a green card to change the time or undo. A **Milk** card splits:
 
 - **Fed** — formula + expressed bottles today (nursing is a feed count, not millilitres)
 - **Formula** — formula given today
@@ -59,7 +60,7 @@ The care day starts at 5:00 local (configurable), not midnight. Units are ml/oz,
 1. Enter the baby’s name and your name.
 2. **Feed → Start left/right** starts a timer. Switch side, then end. **Log times on each breast** is for a feed that already happened. Bottles are on the same sheet.
 3. **Sleep** opens a sheet: start now, or save a nap with started and woke times. If a sleep timer is already running, the home button ends it.
-4. **Pump**, **Diaper**, **Temp**, **Weight**, and **Note** are one sheet each.
+4. **Pump**, **Diaper**, **Temp**, **Weight**, and **Note** are one sheet each. **Vitamin D** and **Vitamin K** are the red/green cards: tap red to log now, tap green to edit.
 5. Tap a timeline row to edit time, breast minutes, notes, or delete (with undo).
 6. Settings: units, care-day start hour, 48-hour copy for the pediatrician, JSON/CSV backup. **This Wi-Fi** links the other parent’s phone on the home network with a 6-digit passkey — events stay on the two phones. QR codes remain as a fallback.
 7. iOS: Share → Add to Home Screen. Android: Install app.
