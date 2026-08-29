@@ -141,7 +141,7 @@ export function SettingsPage({
       <section className="card quiet">
         <h2>Privacy</h2>
         <p className="muted">
-          Events stay on this phone until you link on this Wi-Fi. Linking copies them to the other phone over the local network only — not to a server. There is still no catch-up while the other phone is off the network; connect again when you are both home.
+          Events stay on this phone until you link on this Wi-Fi. A 6-digit passkey matches the two phones, then logs copy over the local network — not into a cloud baby record. There is still no catch-up while the other phone is off the network; connect again when you are both home.
         </p>
       </section>
 

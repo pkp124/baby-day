@@ -96,6 +96,39 @@ h1, h2, h3 { font-family: var(--display); font-weight: 640; margin: 0; }
   background: #f6efe6;
   padding: 10px;
 }
+.passkey-code {
+  font-family: var(--display);
+  font-size: 3.1rem;
+  letter-spacing: 0.14em;
+  line-height: 1.1;
+  text-align: center;
+  padding: 18px 8px;
+  border-radius: 22px;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  width: 100%;
+}
+.passkey-input {
+  font-family: var(--display);
+  font-size: 2.1rem;
+  letter-spacing: 0.28em;
+  text-align: center;
+  width: 100%;
+  min-height: 64px;
+  border-radius: 18px;
+  border: 1px solid var(--line);
+  background: var(--bg-2);
+  padding: 8px 12px;
+}
+.advanced {
+  margin-top: 14px;
+}
+.advanced summary {
+  color: var(--faint);
+  cursor: pointer;
+  padding: 8px 0;
+}
 .scan-video {
   width: 100%;
   border-radius: 16px;
