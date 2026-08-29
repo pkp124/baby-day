@@ -258,7 +258,7 @@ function armPairTimeout() {
       phase: "error",
       error: "That passkey timed out. Show or enter a new one.",
     });
-  }, 90_000);
+  }, 180_000);
 }
 
 function teardownPeer() {
