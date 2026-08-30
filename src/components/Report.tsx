@@ -1,14 +1,95 @@
 import type { CareEvent, Settings } from "../lib/types";
-import { buildReport, formatPct, gapLabel, REPORT_HOURS, reportFileStem, type ReportModel } from "../lib/report";
-import { darkChartTheme, dayBarsSvg, ganttSvg, sleepSplitSvg, tempLineSvg } from "../lib/reportCharts";
+import { buildReport, formatHours, formatPct, gapLabel, REPORT_HOURS, reportFileStem, type ReportModel } from "../lib/report";
+import {
+  darkChartTheme,
+  diaperTrendSvg,
+  ganttSvg,
+  milkTrendSvg,
+  sleepSplitSvg,
+  sleepTrendSvg,
+  tempHistorySvg,
+  weightHistorySvg,
+} from "../lib/reportCharts";
 import { reportHtml } from "../lib/reportHtml";
 import { downloadFile, printHtml } from "../lib/download";
 import { formatDuration } from "../lib/time";
 import { formatMl, formatTemp, formatWeight } from "../lib/units";
 
-function Chart({ markup, label, scroll }: { markup: string; label: string; scroll?: boolean }) {
+function Chart({
+  markup,
+  label,
+  scroll,
+  trend,
+}: {
+  markup: string;
+  label: string;
+  scroll?: boolean;
+  trend?: boolean;
+}) {
+  const className = ["chart-frame", scroll || trend ? "scroll" : "", trend ? "trend" : ""].filter(Boolean).join(" ");
+  return <div className={className} role="img" aria-label={label} dangerouslySetInnerHTML={{ __html: markup }} />;
+}
+
+function LifetimeSection({ report, settings }: { report: ReportModel; settings: Settings }) {
+  const { lifetime } = report;
+  if (lifetime.dayCount === 0) {
+    return (
+      <>
+        <h2>All days</h2>
+        <p className="faint">Trends fill in as you log sleep, milk, diapers, temperature, and weight.</p>
+      </>
+    );
+  }
   return (
-    <div className={scroll ? "chart-frame scroll" : "chart-frame"} role="img" aria-label={label} dangerouslySetInnerHTML={{ __html: markup }} />
+    <>
+      <h2>All days</h2>
+      <p className="muted">
+        {lifetime.dayCount} care {lifetime.dayCount === 1 ? "day" : "days"} since first log. Typical day:{" "}
+        {formatHours(lifetime.medianSleepHours ?? 0)} sleep · {formatMl(lifetime.medianMilkMl ?? 0, settings.volumeUnit)}{" "}
+        · {lifetime.medianDiapers == null ? "—" : `${Math.round(lifetime.medianDiapers * 10) / 10} diapers`}.
+      </p>
+      <Chart markup={sleepTrendSvg(lifetime.days, darkChartTheme)} label="Sleep hours for every care day" trend />
+      <Chart markup={milkTrendSvg(lifetime.days, darkChartTheme, settings)} label="Bottle milk for every care day" trend />
+      <Chart markup={diaperTrendSvg(lifetime.days, darkChartTheme)} label="Diapers for every care day" trend />
+      <Chart markup={tempHistorySvg(lifetime.temps, darkChartTheme, settings)} label="All temperature readings" />
+      <Chart markup={weightHistorySvg(lifetime.weights, darkChartTheme, settings)} label="All weight readings" />
+      <p className="faint">* is today, still in progress. Empty days stay on the chart so gaps are visible.</p>
+      <div className="trend-table-wrap">
+        <table className="trend-table">
+          <thead>
+            <tr>
+              <th>Day</th>
+              <th>Sleep</th>
+              <th>Milk</th>
+              <th>Diapers</th>
+              <th>Temp</th>
+              <th>Weight</th>
+            </tr>
+          </thead>
+          <tbody>
+            {[...lifetime.days].reverse().map((day) => (
+              <tr key={day.key}>
+                <td>
+                  {day.label}
+                  {day.partial ? "*" : ""}
+                </td>
+                <td>{formatHours(day.sleepHours)}</td>
+                <td>{formatMl(day.milkMl, settings.volumeUnit)}</td>
+                <td>
+                  {day.diapers}
+                  <span className="faint">
+                    {" "}
+                    ({day.wet}/{day.dirty})
+                  </span>
+                </td>
+                <td>{day.lastTempC == null ? "—" : formatTemp(day.lastTempC, settings.tempUnit)}</td>
+                <td>{day.lastWeightGrams == null ? "—" : formatWeight(day.lastWeightGrams, settings.weightUnit)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </>
   );
 }
 
@@ -74,12 +155,13 @@ export function ReportPage({
     <div className="report-page">
       <header className="topbar">
         <div>
-          <div className="eyebrow">Last {REPORT_HOURS} hours</div>
+          <div className="eyebrow">Report</div>
           <h1 className="baby-name">{settings.babyName || "Baby"}</h1>
         </div>
       </header>
       <p className="muted">
-        A handover snapshot, not medical advice. Save the HTML file, or print it and choose Save as PDF.
+        Last {REPORT_HOURS} hours plus trends for every care day on this phone. Not medical advice. Save HTML, or print
+        to PDF.
       </p>
       <div className="row" style={{ margin: "12px 0 16px" }}>
         <button className="primary grow" type="button" onClick={saveHtml}>
@@ -118,26 +200,17 @@ export function ReportPage({
         </span>
       </div>
 
-      <h2>Sleep</h2>
+      <h2>Last {REPORT_HOURS} hours</h2>
       <Chart markup={sleepSplitSvg(report, darkChartTheme)} label="Percent of time asleep" />
-      <Chart markup={dayBarsSvg(report, darkChartTheme, "sleep", settings)} label="Sleep share per care day" />
       <p className="faint">
         Longest stretch {formatDuration(report.longestSleepSeconds)} asleep, {formatDuration(report.longestAwakeSeconds)}{" "}
-        awake. {report.sleepCount} sleep {report.sleepCount === 1 ? "stretch" : "stretches"}.
+        awake. {report.sleepCount} sleep {report.sleepCount === 1 ? "stretch" : "stretches"}. Breast{" "}
+        {formatDuration(report.breastSeconds)} · median gap {gapLabel(report.medianFeedGapMinutes)}.
       </p>
 
-      <h2>Feeding</h2>
-      <Chart markup={dayBarsSvg(report, darkChartTheme, "feeds", settings)} label="Feeds per care day" />
-      <Chart markup={dayBarsSvg(report, darkChartTheme, "milk", settings)} label="Bottle milk per care day" />
-      <p className="faint">
-        Breast {formatDuration(report.breastSeconds)} · median gap {gapLabel(report.medianFeedGapMinutes)}. Nursing is a
-        feed count, not millilitres. * is a partial care day.
-      </p>
+      <LifetimeSection report={report} settings={settings} />
 
-      <h2>Temperature</h2>
-      <Chart markup={tempLineSvg(report, darkChartTheme, settings)} label="Temperature trend" />
-
-      <h2>Vitamins</h2>
+      <h2>Vitamins (last {REPORT_HOURS} hours)</h2>
       <div className="timeline">
         {report.days.map((day) => (
           <div key={day.key} className="event">

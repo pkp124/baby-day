@@ -1,14 +1,17 @@
 import { describeEvent } from "./summary";
 import { formatDuration } from "./time";
 import { formatMl, formatTemp, formatWeight } from "./units";
-import { formatPct, formatReportStamp, gapLabel, type ReportModel } from "./report";
+import { formatHours, formatPct, formatReportStamp, gapLabel, type ReportModel } from "./report";
 import {
-  dayBarsSvg,
+  diaperTrendSvg,
   escapeXml,
   ganttSvg,
   lightChartTheme,
+  milkTrendSvg,
   sleepSplitSvg,
-  tempLineSvg,
+  sleepTrendSvg,
+  tempHistorySvg,
+  weightHistorySvg,
 } from "./reportCharts";
 import type { Settings } from "./types";
 
@@ -35,6 +38,7 @@ h2 { font-size: 1.25rem; margin: 28px 0 10px; }
 .chart { background: #fff; border: 1px solid rgba(28,23,18,0.08); border-radius: 16px; padding: 8px; margin: 10px 0; overflow-x: auto; }
 .chart svg { display: block; min-width: 1000px; }
 .chart.fit svg { min-width: 0; }
+.chart.trend svg { min-width: 0; width: auto; height: 168px; }
 .legend { display: flex; flex-wrap: wrap; gap: 10px 16px; font-size: 0.85rem; color: #5c4e42; margin: 8px 0 0; }
 .swatch { display: inline-block; width: 10px; height: 10px; border-radius: 99px; margin-right: 6px; }
 table { width: 100%; border-collapse: collapse; font-size: 0.92rem; }
@@ -134,19 +138,14 @@ export function reportHtml(model: ReportModel, settings: Settings) {
       <span><i class="swatch" style="background:#c45c4a"></i>Temp</span>
     </div>
 
-    <h2>Sleep</h2>
+    <h2>Last ${model.hours} hours</h2>
     <div class="chart fit">${sleepSplitSvg(model, theme)}</div>
-    <div class="chart fit">${dayBarsSvg(model, theme, "sleep", settings)}</div>
+    <p class="note">Longest stretch ${escapeXml(formatDuration(model.longestSleepSeconds))} asleep, ${escapeXml(formatDuration(model.longestAwakeSeconds))} awake. Nursing is a feed count, not millilitres.</p>
 
-    <h2>Feeding</h2>
-    <div class="chart fit">${dayBarsSvg(model, theme, "feeds", settings)}</div>
-    <div class="chart fit">${dayBarsSvg(model, theme, "milk", settings)}</div>
-    <p class="note">Nursing is counted as a feed, not millilitres. * is a partial care day at the edge of the 72-hour window.</p>
+    <h2>All days</h2>
+    ${lifetimeHtml(model, settings)}
 
-    <h2>Temperature</h2>
-    <div class="chart fit">${tempLineSvg(model, theme, settings)}</div>
-
-    <h2>Vitamins by care day</h2>
+    <h2>Vitamins by care day (last ${model.hours} hours)</h2>
     <table>
       <thead><tr><th>Care day</th><th>Vitamin D</th><th>Vitamin K</th></tr></thead>
       <tbody>${vitaminRows || `<tr><td colspan="3">None</td></tr>`}</tbody>
@@ -161,4 +160,33 @@ export function reportHtml(model: ReportModel, settings: Settings) {
   </div>
 </body>
 </html>`;
+}
+
+function lifetimeHtml(model: ReportModel, settings: Settings) {
+  const theme = lightChartTheme;
+  const { lifetime } = model;
+  if (lifetime.dayCount === 0) {
+    return `<p class="note">Trends fill in as you log sleep, milk, diapers, temperature, and weight.</p>`;
+  }
+  const rows = [...lifetime.days]
+    .reverse()
+    .map((day) => {
+      const temp = day.lastTempC == null ? "—" : formatTemp(day.lastTempC, settings.tempUnit);
+      const weight = day.lastWeightGrams == null ? "—" : formatWeight(day.lastWeightGrams, settings.weightUnit);
+      return `<tr><td>${escapeXml(day.label)}${day.partial ? "*" : ""}</td><td>${escapeXml(formatHours(day.sleepHours))}</td><td>${escapeXml(formatMl(day.milkMl, settings.volumeUnit))}</td><td>${day.diapers} (${day.wet}/${day.dirty})</td><td>${escapeXml(temp)}</td><td>${escapeXml(weight)}</td></tr>`;
+    })
+    .join("");
+  const typical = `Typical day: ${formatHours(lifetime.medianSleepHours ?? 0)} sleep · ${formatMl(lifetime.medianMilkMl ?? 0, settings.volumeUnit)} · ${lifetime.medianDiapers == null ? "—" : `${Math.round(lifetime.medianDiapers * 10) / 10} diapers`}.`;
+  return `
+    <p class="note">${lifetime.dayCount} care ${lifetime.dayCount === 1 ? "day" : "days"} since first log. ${escapeXml(typical)} Empty days stay on the chart. * is today.</p>
+    <div class="chart trend">${sleepTrendSvg(lifetime.days, theme)}</div>
+    <div class="chart trend">${milkTrendSvg(lifetime.days, theme, settings)}</div>
+    <div class="chart trend">${diaperTrendSvg(lifetime.days, theme)}</div>
+    <div class="chart fit">${tempHistorySvg(lifetime.temps, theme, settings)}</div>
+    <div class="chart fit">${weightHistorySvg(lifetime.weights, theme, settings)}</div>
+    <table>
+      <thead><tr><th>Day</th><th>Sleep</th><th>Milk</th><th>Diapers</th><th>Temp</th><th>Weight</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+  `;
 }
