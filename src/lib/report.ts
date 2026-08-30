@@ -64,6 +64,45 @@ export type CareDaySlice = {
   vitaminKAt: string | null;
 };
 
+export type WeightSample = {
+  id: string;
+  time: string;
+  atMs: number;
+  grams: number;
+};
+
+export type LifetimeDay = {
+  key: string;
+  label: string;
+  shortLabel: string;
+  start: Date;
+  end: Date;
+  partial: boolean;
+  sleepSeconds: number;
+  sleepHours: number;
+  milkMl: number;
+  formulaMl: number;
+  expressedMl: number;
+  diapers: number;
+  wet: number;
+  dirty: number;
+  lastTempC: number | null;
+  lastWeightGrams: number | null;
+};
+
+export type LifetimeTrends = {
+  dayCount: number;
+  days: LifetimeDay[];
+  temps: TempSample[];
+  weights: WeightSample[];
+  medianSleepHours: number | null;
+  medianMilkMl: number | null;
+  medianDiapers: number | null;
+  firstAt: string | null;
+  lastWeightGrams: number | null;
+  lastWeightAt: string | null;
+};
+
 export type ReportModel = {
   hours: number;
   start: Date;
@@ -105,6 +144,7 @@ export type ReportModel = {
   lastWeightGrams: number | null;
   lastWeightAt: string | null;
   eventLog: CareEvent[];
+  lifetime: LifetimeTrends;
 };
 
 export type Interval = { startMs: number; endMs: number };
@@ -194,6 +234,14 @@ function formatDayLabel(day: CareDay, timeZone: string) {
   }).format(fromZonedLocal(timeZone, day.year, day.month, day.day, 12));
 }
 
+function formatShortDay(day: CareDay, timeZone: string) {
+  return new Intl.DateTimeFormat(undefined, {
+    timeZone,
+    month: "numeric",
+    day: "numeric",
+  }).format(fromZonedLocal(timeZone, day.year, day.month, day.day, 12));
+}
+
 export function formatReportStamp(date: Date, timeZone: string) {
   return new Intl.DateTimeFormat(undefined, {
     timeZone,
@@ -228,6 +276,101 @@ export function sleepIntervals(events: CareEvent[], winStart: number, winEnd: nu
     if (clipped) raw.push(clipped);
   }
   return mergeIntervals(raw);
+}
+
+function emptyLifetime(): LifetimeTrends {
+  return {
+    dayCount: 0,
+    days: [],
+    temps: [],
+    weights: [],
+    medianSleepHours: null,
+    medianMilkMl: null,
+    medianDiapers: null,
+    firstAt: null,
+    lastWeightGrams: null,
+    lastWeightAt: null,
+  };
+}
+
+export function buildLifetimeTrends(events: CareEvent[], settings: Settings, now = new Date()): LifetimeTrends {
+  const live = liveEvents(events);
+  if (live.length === 0) return emptyLifetime();
+
+  const firstAt = live.reduce((min, event) => (event.time < min ? event.time : min), live[0].time);
+  const firstDay = careDayFor(new Date(firstAt), settings.timezone, settings.careDayStartHour);
+  const days = careDaysOverlapping(firstDay.start, now, settings.timezone, settings.careDayStartHour).map((day) => {
+    const sliceEndMs = Math.min(day.end.getTime(), now.getTime());
+    const sliceStartMs = day.start.getTime();
+    const dayLen = Math.max(1, (day.end.getTime() - day.start.getTime()) / 1000);
+    const sliceSeconds = Math.max(1, (sliceEndMs - sliceStartMs) / 1000);
+    const totals = dayTotals(live, day.start, new Date(sliceEndMs), now);
+    const sleepSec = intervalSeconds(sleepIntervals(live, sliceStartMs, sliceEndMs, now));
+    const dayEvents = live.filter((event) => {
+      const t = new Date(event.time).getTime();
+      return t >= sliceStartMs && t < sliceEndMs;
+    });
+    const lastTemp = dayEvents
+      .filter((event) => event.type === "temp")
+      .sort((a, b) => (a.time < b.time ? 1 : -1))[0];
+    const lastWeight = dayEvents
+      .filter((event) => event.type === "weight")
+      .sort((a, b) => (a.time < b.time ? 1 : -1))[0];
+    const diapers = dayEvents.filter((event) => event.type === "diaper").length;
+    return {
+      key: day.key,
+      label: formatDayLabel(day, settings.timezone),
+      shortLabel: formatShortDay(day, settings.timezone),
+      start: day.start,
+      end: day.end,
+      partial: sliceSeconds / dayLen < 0.95,
+      sleepSeconds: sleepSec,
+      sleepHours: sleepSec / 3600,
+      milkMl: totals.fedMl,
+      formulaMl: totals.formulaMl,
+      expressedMl: totals.expressedMl,
+      diapers,
+      wet: totals.wet,
+      dirty: totals.dirty,
+      lastTempC: lastTemp && lastTemp.type === "temp" ? (lastTemp.data as TempData).celsius : null,
+      lastWeightGrams: lastWeight && lastWeight.type === "weight" ? (lastWeight.data as { grams: number }).grams : null,
+    } satisfies LifetimeDay;
+  });
+
+  const complete = days.filter((day) => !day.partial);
+  const forMedian = complete.length > 0 ? complete : days;
+  const lastWeight = live
+    .filter((event) => event.type === "weight")
+    .sort((a, b) => (a.time < b.time ? 1 : -1))[0];
+
+  return {
+    dayCount: days.length,
+    days,
+    temps: live
+      .filter((event) => event.type === "temp")
+      .map((event) => ({
+        id: event.id,
+        time: event.time,
+        atMs: new Date(event.time).getTime(),
+        celsius: (event.data as TempData).celsius,
+      }))
+      .sort((a, b) => a.atMs - b.atMs),
+    weights: live
+      .filter((event) => event.type === "weight")
+      .map((event) => ({
+        id: event.id,
+        time: event.time,
+        atMs: new Date(event.time).getTime(),
+        grams: (event.data as { grams: number }).grams,
+      }))
+      .sort((a, b) => a.atMs - b.atMs),
+    medianSleepHours: median(forMedian.map((day) => day.sleepHours)),
+    medianMilkMl: median(forMedian.map((day) => day.milkMl)),
+    medianDiapers: median(forMedian.map((day) => day.diapers)),
+    firstAt,
+    lastWeightGrams: lastWeight && lastWeight.type === "weight" ? (lastWeight.data as { grams: number }).grams : null,
+    lastWeightAt: lastWeight ? lastWeight.time : null,
+  };
 }
 
 export function buildReport(events: CareEvent[], settings: Settings, now = new Date(), hours = REPORT_HOURS): ReportModel {
@@ -453,7 +596,14 @@ export function buildReport(events: CareEvent[], settings: Settings, now = new D
     lastWeightGrams: lastWeight && lastWeight.type === "weight" ? (lastWeight.data as { grams: number }).grams : null,
     lastWeightAt: lastWeight ? lastWeight.time : null,
     eventLog,
+    lifetime: buildLifetimeTrends(live, settings, now),
   };
+}
+
+export function formatHours(n: number) {
+  if (!Number.isFinite(n) || n <= 0) return "0h";
+  const rounded = Math.round(n * 10) / 10;
+  return Number.isInteger(rounded) ? `${rounded}h` : `${rounded.toFixed(1)}h`;
 }
 
 export function formatPct(n: number) {
