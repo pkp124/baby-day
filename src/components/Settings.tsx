@@ -7,6 +7,9 @@ import { saveSettings } from "../lib/db";
 import { getSupabase, supabaseConfigured } from "../lib/supabase";
 import { eventsToCsv, pediatricSnapshot } from "../lib/summary";
 import { db } from "../lib/db";
+import { buildReport, reportFileStem } from "../lib/report";
+import { reportHtml } from "../lib/reportHtml";
+import { downloadFile, printHtml } from "../lib/download";
 
 export function SettingsPage({
   settings,
@@ -35,12 +38,25 @@ export function SettingsPage({
 
   async function exportJson() {
     const events = await db.events.toArray();
-    download("baby-day.json", JSON.stringify({ settings, events }, null, 2), "application/json");
+    downloadFile("baby-day.json", JSON.stringify({ settings, events }, null, 2), "application/json");
   }
 
   async function exportCsv() {
     const events = await db.events.toArray();
-    download("baby-day.csv", eventsToCsv(events), "text/csv");
+    downloadFile("baby-day.csv", eventsToCsv(events), "text/csv");
+  }
+
+  async function exportReport() {
+    const events = await db.events.toArray();
+    const model = buildReport(events, settings);
+    downloadFile(`${reportFileStem(model)}.html`, reportHtml(model, settings), "text/html;charset=utf-8");
+    setMessage("Downloaded last 72 hours as HTML");
+  }
+
+  async function printReport() {
+    const events = await db.events.toArray();
+    const model = buildReport(events, settings);
+    printHtml(reportHtml(model, settings));
   }
 
   async function signIn(e: FormEvent) {
@@ -134,10 +150,16 @@ export function SettingsPage({
 
       <section className="card quiet">
         <h2>Backup</h2>
-        <p className="muted">Export is the backup. Free-tier databases do not keep point-in-time history.</p>
+        <p className="muted">Export is the backup. The 72-hour HTML report can be printed to PDF. Free-tier databases do not keep point-in-time history.</p>
         <div className="stack">
           <button className="secondary" type="button" onClick={copySummary}>
             Copy last 48 hours
+          </button>
+          <button className="secondary" type="button" onClick={exportReport}>
+            Download 72-hour HTML
+          </button>
+          <button className="secondary" type="button" onClick={printReport}>
+            Print 72-hour PDF
           </button>
           <button className="secondary" type="button" onClick={exportJson}>
             Download JSON
@@ -263,14 +285,4 @@ export function SettingsPage({
       </section>
     </div>
   );
-}
-
-function download(name: string, body: string, type: string) {
-  const blob = new Blob([body], { type });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = name;
-  a.click();
-  URL.revokeObjectURL(url);
 }
