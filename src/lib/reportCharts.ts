@@ -1,6 +1,6 @@
 import { formatDuration } from "./time";
-import { formatMl, formatTemp } from "./units";
-import { formatPct, type ReportModel } from "./report";
+import { formatMl, formatTemp, formatWeight, gramsToDisplay } from "./units";
+import { formatHours, formatPct, type LifetimeDay, type ReportModel, type TempSample, type WeightSample } from "./report";
 import type { Settings } from "./types";
 
 export type ChartTheme = {
@@ -209,57 +209,6 @@ export function sleepSplitSvg(model: ReportModel, theme: ChartTheme) {
   ].join("");
 }
 
-export function dayBarsSvg(
-  model: ReportModel,
-  theme: ChartTheme,
-  kind: "feeds" | "sleep" | "milk",
-  settings: Settings,
-) {
-  const width = 320;
-  const barMax = 120;
-  const labelW = 78;
-  const height = 28 + model.days.length * 28;
-  const values = model.days.map((day) => {
-    switch (kind) {
-      case "feeds":
-        return { label: day.label, value: day.totals.feeds, text: String(day.totals.feeds) };
-      case "sleep":
-        return {
-          label: day.label,
-          value: day.sleepPct,
-          text: `${Math.round(day.sleepPct)}% · ${formatDuration(day.sleepSeconds)}`,
-        };
-      case "milk":
-        return {
-          label: day.label,
-          value: day.totals.fedMl,
-          text: formatMl(day.totals.fedMl, settings.volumeUnit),
-        };
-      default: {
-        const _exhaustive: never = kind;
-        return _exhaustive;
-      }
-    }
-  });
-  const max = Math.max(1, ...values.map((v) => v.value));
-  const color = kind === "sleep" ? theme.sleep : kind === "milk" ? theme.pump : theme.feed;
-  const title = kind === "feeds" ? "Feeds per care day" : kind === "sleep" ? "Sleep share per care day" : "Bottle milk per care day";
-  const parts: string[] = [
-    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="100%" role="img" aria-label="${title}">`,
-    `<rect width="${width}" height="${height}" fill="${theme.surface}" />`,
-    `<text x="8" y="16" fill="${theme.muted}" font-size="11" font-family="system-ui, sans-serif">${title}</text>`,
-  ];
-  values.forEach((row, i) => {
-    const y = 26 + i * 28;
-    const w = (row.value / max) * barMax;
-    parts.push(`<text x="8" y="${y + 12}" fill="${theme.ink}" font-size="11" font-family="system-ui, sans-serif">${escapeXml(row.label)}${model.days[i].partial ? "*" : ""}</text>`);
-    parts.push(`<rect x="${labelW}" y="${y}" width="${round(w)}" height="16" rx="4" fill="${color}" />`);
-    parts.push(`<text x="${round(labelW + w + 6)}" y="${y + 12}" fill="${theme.muted}" font-size="11" font-family="system-ui, sans-serif">${escapeXml(row.text)}</text>`);
-  });
-  parts.push("</svg>");
-  return parts.join("");
-}
-
 export function tempLineSvg(model: ReportModel, theme: ChartTheme, settings: Settings) {
   const width = 320;
   const height = 140;
@@ -304,6 +253,232 @@ export function tempLineSvg(model: ReportModel, theme: ChartTheme, settings: Set
     parts.push(
       `<circle cx="${round(xAt(sample.atMs))}" cy="${round(yAt(sample.celsius))}" r="4" fill="${theme.temp}">` +
         `<title>${escapeXml(formatTemp(sample.celsius, settings.tempUnit))}</title></circle>`,
+    );
+  }
+  parts.push("</svg>");
+  return parts.join("");
+}
+
+function yTicks(max: number, count = 4) {
+  if (max <= 0) return [0];
+  const step = max / count;
+  const ticks: number[] = [];
+  for (let i = 0; i <= count; i++) ticks.push(step * i);
+  return ticks;
+}
+
+function dayPlotWidth(dayCount: number) {
+  const px = dayCount > 120 ? 8 : dayCount > 40 ? 12 : 16;
+  return Math.max(280, dayCount * px);
+}
+
+export function lifetimeTrendSvg(
+  days: LifetimeDay[],
+  theme: ChartTheme,
+  series: {
+    title: string;
+    color: string;
+    values: number[];
+    format: (n: number) => string;
+    empty: string;
+  },
+) {
+  const widthPad = { l: 36, r: 12, t: 26, b: 28 };
+  const plotW = dayPlotWidth(days.length);
+  const width = widthPad.l + plotW + widthPad.r;
+  const height = 168;
+  const innerH = height - widthPad.t - widthPad.b;
+  const parts: string[] = [
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="${width}" height="${height}" role="img" aria-label="${escapeXml(series.title)}">`,
+    `<rect width="${width}" height="${height}" fill="${theme.surface}" />`,
+    `<text x="8" y="16" fill="${theme.muted}" font-size="11" font-family="system-ui, sans-serif">${escapeXml(series.title)}</text>`,
+  ];
+  if (days.length === 0) {
+    parts.push(
+      `<text x="8" y="88" fill="${theme.faint}" font-size="12" font-family="system-ui, sans-serif">${escapeXml(series.empty)}</text>`,
+    );
+    parts.push("</svg>");
+    return parts.join("");
+  }
+  const max = Math.max(1, ...series.values);
+  const yAt = (v: number) => widthPad.t + innerH - (v / max) * innerH;
+  const xAt = (i: number) => {
+    if (days.length === 1) return widthPad.l + plotW / 2;
+    return widthPad.l + (i / (days.length - 1)) * plotW;
+  };
+  for (const tick of yTicks(max)) {
+    const y = yAt(tick);
+    parts.push(`<line x1="${widthPad.l}" y1="${round(y)}" x2="${widthPad.l + plotW}" y2="${round(y)}" stroke="${theme.line}" />`);
+    parts.push(
+      `<text x="${widthPad.l - 4}" y="${round(y + 3)}" fill="${theme.faint}" font-size="9" font-family="system-ui, sans-serif" text-anchor="end">${escapeXml(series.format(tick))}</text>`,
+    );
+  }
+  const coords = series.values.map((value, i) => `${round(xAt(i))} ${round(yAt(value))}`);
+  const baseY = round(yAt(0));
+  if (coords.length === 1) {
+    parts.push(
+      `<circle cx="${coords[0].split(" ")[0]}" cy="${coords[0].split(" ")[1]}" r="4" fill="${series.color}">` +
+        `<title>${escapeXml(`${days[0].label}: ${series.format(series.values[0])}`)}</title></circle>`,
+    );
+  } else {
+    const firstX = round(xAt(0));
+    const lastX = round(xAt(days.length - 1));
+    parts.push(
+      `<path d="M ${firstX} ${baseY} L ${coords.join(" L ")} L ${lastX} ${baseY} Z" fill="${series.color}" opacity="0.22" />`,
+    );
+    parts.push(
+      `<path d="M ${coords.join(" L ")}" fill="none" stroke="${series.color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />`,
+    );
+    const showDots = days.length <= 45;
+    series.values.forEach((value, i) => {
+      if (!showDots && i !== days.length - 1) return;
+      parts.push(
+        `<circle cx="${round(xAt(i))}" cy="${round(yAt(value))}" r="${i === days.length - 1 ? 4 : 3}" fill="${series.color}">` +
+          `<title>${escapeXml(`${days[i].label}: ${series.format(value)}`)}</title></circle>`,
+      );
+    });
+  }
+  const labelStep = Math.max(1, Math.ceil(days.length / 6));
+  days.forEach((day, i) => {
+    if (i % labelStep !== 0 && i !== days.length - 1) return;
+    parts.push(
+      `<text x="${round(xAt(i))}" y="${height - 8}" fill="${theme.faint}" font-size="9" font-family="system-ui, sans-serif" text-anchor="middle">${escapeXml(day.shortLabel)}${day.partial ? "*" : ""}</text>`,
+    );
+  });
+  parts.push("</svg>");
+  return parts.join("");
+}
+
+export function sleepTrendSvg(days: LifetimeDay[], theme: ChartTheme) {
+  return lifetimeTrendSvg(days, theme, {
+    title: "Sleep hours per care day",
+    color: theme.sleep,
+    values: days.map((day) => day.sleepHours),
+    format: formatHours,
+    empty: "No days logged yet",
+  });
+}
+
+export function milkTrendSvg(days: LifetimeDay[], theme: ChartTheme, settings: Settings) {
+  return lifetimeTrendSvg(days, theme, {
+    title: "Bottle milk per care day",
+    color: theme.feed,
+    values: days.map((day) => day.milkMl),
+    format: (n) => formatMl(n, settings.volumeUnit),
+    empty: "No days logged yet",
+  });
+}
+
+export function diaperTrendSvg(days: LifetimeDay[], theme: ChartTheme) {
+  return lifetimeTrendSvg(days, theme, {
+    title: "Diapers per care day",
+    color: theme.diaper,
+    values: days.map((day) => day.diapers),
+    format: (n) => String(Math.round(n)),
+    empty: "No days logged yet",
+  });
+}
+
+export function tempHistorySvg(samples: TempSample[], theme: ChartTheme, settings: Settings) {
+  return readingsLineSvg({
+    title: "Temperature",
+    empty: "No temperatures logged",
+    theme,
+    color: theme.temp,
+    samples: samples.map((sample) => ({
+      atMs: sample.atMs,
+      y: sample.celsius,
+      label: formatTemp(sample.celsius, settings.tempUnit),
+    })),
+    formatY: (y) => formatTemp(y, settings.tempUnit),
+    padY: 0.3,
+  });
+}
+
+export function weightHistorySvg(samples: WeightSample[], theme: ChartTheme, settings: Settings) {
+  return readingsLineSvg({
+    title: "Weight",
+    empty: "No weights logged",
+    theme,
+    color: theme.weight,
+    samples: samples.map((sample) => ({
+      atMs: sample.atMs,
+      y: gramsToDisplay(sample.grams, settings.weightUnit),
+      label: formatWeight(sample.grams, settings.weightUnit),
+    })),
+    formatY: (y) =>
+      `${y.toFixed(settings.weightUnit === "lb" ? 2 : y >= 10 ? 1 : 2)} ${settings.weightUnit === "lb" ? "lb" : "kg"}`,
+    padY: settings.weightUnit === "lb" ? 0.2 : 0.05,
+  });
+}
+
+function readingsLineSvg(opts: {
+  title: string;
+  empty: string;
+  theme: ChartTheme;
+  color: string;
+  samples: { atMs: number; y: number; label: string }[];
+  formatY: (y: number) => string;
+  padY: number;
+}) {
+  const { theme } = opts;
+  const width = 320;
+  const height = 168;
+  const pad = { l: 44, r: 12, t: 26, b: 28 };
+  const innerW = width - pad.l - pad.r;
+  const innerH = height - pad.t - pad.b;
+  const parts: string[] = [
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="100%" role="img" aria-label="${escapeXml(opts.title)}">`,
+    `<rect width="${width}" height="${height}" fill="${theme.surface}" />`,
+    `<text x="8" y="16" fill="${theme.muted}" font-size="11" font-family="system-ui, sans-serif">${escapeXml(opts.title)}</text>`,
+  ];
+  if (opts.samples.length === 0) {
+    parts.push(
+      `<text x="8" y="88" fill="${theme.faint}" font-size="12" font-family="system-ui, sans-serif">${escapeXml(opts.empty)}</text>`,
+    );
+    parts.push("</svg>");
+    return parts.join("");
+  }
+  const ys = opts.samples.map((s) => s.y);
+  const minY = Math.min(...ys) - opts.padY;
+  const maxY = Math.max(...ys) + opts.padY;
+  const range = Math.max(opts.padY * 2, maxY - minY);
+  const minX = opts.samples[0].atMs;
+  const maxX = opts.samples[opts.samples.length - 1].atMs;
+  const xSpan = Math.max(1, maxX - minX);
+  const xAt = (ms: number) => pad.l + ((ms - minX) / xSpan) * innerW;
+  const yAt = (y: number) => pad.t + ((maxY - y) / range) * innerH;
+  parts.push(
+    `<line x1="${pad.l}" y1="${round(yAt(minY))}" x2="${pad.l + innerW}" y2="${round(yAt(minY))}" stroke="${theme.line}" />`,
+  );
+  parts.push(
+    `<line x1="${pad.l}" y1="${round(yAt(maxY))}" x2="${pad.l + innerW}" y2="${round(yAt(maxY))}" stroke="${theme.line}" />`,
+  );
+  parts.push(
+    `<text x="4" y="${round(yAt(maxY) + 4)}" fill="${theme.faint}" font-size="10" font-family="system-ui, sans-serif">${escapeXml(opts.formatY(maxY))}</text>`,
+  );
+  parts.push(
+    `<text x="4" y="${round(yAt(minY) + 4)}" fill="${theme.faint}" font-size="10" font-family="system-ui, sans-serif">${escapeXml(opts.formatY(minY))}</text>`,
+  );
+  if (opts.samples.length > 1) {
+    const d = opts.samples.map((s, i) => `${i === 0 ? "M" : "L"} ${round(xAt(s.atMs))} ${round(yAt(s.y))}`).join(" ");
+    parts.push(`<path d="${d}" fill="none" stroke="${opts.color}" stroke-width="2" stroke-linejoin="round" />`);
+  }
+  for (const sample of opts.samples) {
+    parts.push(
+      `<circle cx="${round(xAt(sample.atMs))}" cy="${round(yAt(sample.y))}" r="4" fill="${opts.color}">` +
+        `<title>${escapeXml(sample.label)}</title></circle>`,
+    );
+  }
+  const first = opts.samples[0];
+  const last = opts.samples[opts.samples.length - 1];
+  const short = (ms: number) => new Intl.DateTimeFormat(undefined, { month: "numeric", day: "numeric" }).format(new Date(ms));
+  parts.push(
+    `<text x="${pad.l}" y="${height - 8}" fill="${theme.faint}" font-size="9" font-family="system-ui, sans-serif">${escapeXml(short(first.atMs))}</text>`,
+  );
+  if (last.atMs !== first.atMs) {
+    parts.push(
+      `<text x="${pad.l + innerW}" y="${height - 8}" fill="${theme.faint}" font-size="9" font-family="system-ui, sans-serif" text-anchor="end">${escapeXml(short(last.atMs))}</text>`,
     );
   }
   parts.push("</svg>");

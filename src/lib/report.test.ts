@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { buildReport, clipInterval, formatPct, gapMs, mergeIntervals, reportFileStem } from "./report";
+import { buildReport, clipInterval, formatHours, formatPct, gapMs, mergeIntervals, reportFileStem } from "./report";
 import { reportHtml } from "./reportHtml";
-import { darkChartTheme, ganttSvg, tempLineSvg } from "./reportCharts";
+import { darkChartTheme, ganttSvg, sleepTrendSvg, tempLineSvg } from "./reportCharts";
 import { defaultSettings, type CareEvent, type EventType } from "./types";
 
 const settings = {
@@ -215,6 +215,8 @@ describe("72-hour report", () => {
     expect(html).toContain("Care timeline");
     expect(html).toContain("window.print()");
     expect(html).toContain("1 wet");
+    expect(html).toContain("All days");
+    expect(html).toContain("Sleep hours per care day");
     expect(reportFileStem(model)).toBe("baby-day-72h-arjun-title-script-alert-1-script-2026-08-30");
   });
 
@@ -241,6 +243,83 @@ describe("72-hour report", () => {
   it("rounds sleep percentage for display", () => {
     expect(formatPct(58.4)).toBe("58%");
     expect(formatPct(58.6)).toBe("59%");
+    expect(formatHours(14.24)).toBe("14.2h");
+    expect(formatHours(8)).toBe("8h");
+  });
+});
+
+describe("lifetime trends", () => {
+  it("keeps days older than 72 hours and fills the gaps", () => {
+    const events = [
+      event({
+        id: "old-sleep",
+        type: "sleep",
+        time: "2026-08-20T10:00:00.000Z",
+        endedAt: "2026-08-20T16:00:00.000Z",
+      }),
+      event({
+        id: "old-milk",
+        type: "feed",
+        time: "2026-08-20T11:00:00.000Z",
+        data: { method: "formula", formulaMl: 120 },
+      }),
+      event({
+        id: "old-diaper",
+        type: "diaper",
+        time: "2026-08-20T12:00:00.000Z",
+        data: { kind: "wet" },
+      }),
+      event({
+        id: "old-weight",
+        type: "weight",
+        time: "2026-08-21T09:00:00.000Z",
+        data: { grams: 3800 },
+      }),
+      event({
+        id: "old-temp",
+        type: "temp",
+        time: "2026-08-22T09:00:00.000Z",
+        data: { celsius: 36.7 },
+      }),
+      event({
+        id: "new-feed",
+        type: "feed",
+        time: "2026-08-30T10:00:00.000Z",
+        data: { method: "formula", formulaMl: 90 },
+      }),
+    ];
+    const report = buildReport(events, settings, now);
+    expect(report.lifetime.dayCount).toBeGreaterThanOrEqual(10);
+    const first = report.lifetime.days[0];
+    expect(first.key).toBe("2026-08-20");
+    expect(first.sleepHours).toBe(6);
+    expect(first.milkMl).toBe(120);
+    expect(first.diapers).toBe(1);
+    const quiet = report.lifetime.days.find((day) => day.key === "2026-08-25");
+    expect(quiet?.sleepHours).toBe(0);
+    expect(quiet?.milkMl).toBe(0);
+    expect(quiet?.diapers).toBe(0);
+    expect(report.lifetime.weights).toHaveLength(1);
+    expect(report.lifetime.temps[0].celsius).toBe(36.7);
+    expect(report.lifetime.lastWeightGrams).toBe(3800);
+    expect(report.feeds).toBe(1);
+    expect(sleepTrendSvg(report.lifetime.days, darkChartTheme)).toContain("Sleep hours per care day");
+  });
+
+  it("splits overnight sleep across care days", () => {
+    const events = [
+      event({
+        id: "overnight",
+        type: "sleep",
+        time: "2026-08-21T03:00:00.000Z",
+        endedAt: "2026-08-21T07:00:00.000Z",
+      }),
+    ];
+    const report = buildReport(events, settings, now);
+    const d20 = report.lifetime.days.find((day) => day.key === "2026-08-20");
+    const d21 = report.lifetime.days.find((day) => day.key === "2026-08-21");
+    expect(d20?.sleepHours).toBe(2);
+    expect(d21?.sleepHours).toBe(2);
   });
 });
 
