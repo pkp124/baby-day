@@ -1,14 +1,16 @@
-type Page = "home" | "settings";
+type Page = "home" | "report" | "settings";
 
 export function Dock({
   page,
   onHome,
+  onReport,
   onSettings,
   needRefresh,
   onReload,
 }: {
   page: Page;
   onHome: () => void;
+  onReport: () => void;
   onSettings: () => void;
   needRefresh: boolean;
   onReload: () => void;
@@ -23,7 +25,7 @@ export function Dock({
           </button>
         </div>
       )}
-      <div className="dock-tabs">
+      <div className="dock-tabs three">
         <button
           type="button"
           className={page === "home" ? "on" : ""}
@@ -31,6 +33,14 @@ export function Dock({
           onClick={onHome}
         >
           Home
+        </button>
+        <button
+          type="button"
+          className={page === "report" ? "on" : ""}
+          aria-current={page === "report" ? "page" : undefined}
+          onClick={onReport}
+        >
+          Report
         </button>
         <button
           type="button"

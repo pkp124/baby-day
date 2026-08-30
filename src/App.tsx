@@ -3,6 +3,7 @@ import { useBabyDay, usePwaUpdate } from "./hooks/useBabyDay";
 import { useNow, useWakeLock } from "./hooks/useNow";
 import { Onboarding } from "./components/Onboarding";
 import { Glance, HandoverCard, MilkCard, TempLine, Timeline, VitaminCards, WeightLine } from "./components/Bits";
+import { ReportPage, SeventyTwoCard } from "./components/Report";
 import {
   BottleSheet,
   DiaperSheet,
@@ -80,6 +81,28 @@ export default function App() {
         <Dock
           page="settings"
           onHome={() => store.setPage("home")}
+          onReport={() => store.setPage("report")}
+          onSettings={() => store.setPage("settings")}
+          needRefresh={needRefresh}
+          onReload={reload}
+        />
+      </div>
+    );
+  }
+
+  if (store.page === "report") {
+    return (
+      <div className={needRefresh ? "app has-update" : "app"}>
+        <ReportPage
+          events={store.events}
+          settings={store.settings}
+          now={now}
+          onHome={() => store.setPage("home")}
+        />
+        <Dock
+          page="report"
+          onHome={() => store.setPage("home")}
+          onReport={() => store.setPage("report")}
           onSettings={() => store.setPage("settings")}
           needRefresh={needRefresh}
           onReload={reload}
@@ -210,6 +233,13 @@ export default function App() {
             <WeightLine events={store.events} settings={store.settings} />
             <TempLine events={store.events} settings={store.settings} />
           </div>
+
+          <SeventyTwoCard
+            events={store.events}
+            settings={store.settings}
+            now={now}
+            onOpen={() => store.setPage("report")}
+          />
         </div>
 
         <div>
@@ -375,6 +405,7 @@ export default function App() {
       <Dock
         page="home"
         onHome={() => store.setPage("home")}
+        onReport={() => store.setPage("report")}
         onSettings={() => store.setPage("settings")}
         needRefresh={needRefresh}
         onReload={reload}

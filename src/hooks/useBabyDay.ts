@@ -11,7 +11,7 @@ export function useBabyDay() {
   const [settings, setSettings] = useState<Settings | null>(null);
   const [events, setEvents] = useState<CareEvent[]>([]);
   const [pending, setPending] = useState(0);
-  const [page, setPage] = useState<"home" | "settings">("home");
+  const [page, setPage] = useState<"home" | "settings" | "report">("home");
   const [toast, setToast] = useState<{ message: string; undo?: () => void } | null>(null);
   const [sessionStartedAt, setSessionStartedAt] = useState<string | null>(null);
   const [sync, setSync] = useState<SyncState>({
