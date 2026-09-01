@@ -1,15 +1,16 @@
 import { useEffect, useRef, useState } from "react";
 import { useWakeLock } from "../hooks/useNow";
-import { useLan } from "../lib/lan";
 import {
   setCribFacing,
   setCribMic,
   startCrib,
   startWatch,
   stopMedia,
+  retryCribCamera,
   useMedia,
   type MediaPhase,
 } from "../lib/lanMedia";
+import { formatPasskey, normalizePasskey } from "../lib/pairCode";
 
 export function CribWatchPage({
   mode,
@@ -18,19 +19,21 @@ export function CribWatchPage({
   mode: "crib" | "watch";
   onBack: () => void;
 }) {
-  const lan = useLan();
   const media = useMedia();
   const videoRef = useRef<HTMLVideoElement>(null);
   const [soundOn, setSoundOn] = useState(false);
-  useWakeLock(true);
+  const [digits, setDigits] = useState("");
+  const [joinError, setJoinError] = useState("");
+  const [joining, setJoining] = useState(false);
+  useWakeLock(true, true);
 
   useEffect(() => {
-    if (mode === "watch") void startWatch();
-    else void startCrib();
+    if (mode === "crib") void startCrib();
     return () => stopMedia();
   }, [mode]);
 
   const stream = mode === "crib" ? media.localStream : media.remoteStream;
+  const liveCount = media.watchers.filter((watcher) => watcher.live).length;
 
   useEffect(() => {
     const video = videoRef.current;
@@ -41,11 +44,22 @@ export function CribWatchPage({
     void video.play().catch(() => undefined);
   }, [stream, mode, soundOn]);
 
-  const linked = lan.phase === "connected";
-  const waitingWatch = mode === "crib" && media.phase === "waiting";
-  const waitingCrib = mode === "watch" && media.phase === "waiting" && !media.remoteStream;
-  const live = media.phase === "live";
-  const status = statusLine(mode, media.phase, linked, lan.partnerName);
+  async function join(code: string) {
+    const next = normalizePasskey(code);
+    if (next.length !== 6 || joining) return;
+    setJoining(true);
+    setJoinError("");
+    try {
+      await startWatch(next);
+    } catch (err) {
+      setJoinError(err instanceof Error ? err.message : "Could not use that passkey");
+    } finally {
+      setJoining(false);
+    }
+  }
+
+  const status = statusLine(mode, media.phase, liveCount, media.watchers.length);
+  const showJoin = mode === "watch" && media.phase !== "live" && media.phase !== "waiting" && media.phase !== "starting";
 
   return (
     <div className="media-stage">
@@ -64,12 +78,58 @@ export function CribWatchPage({
         <div>
           <div className="eyebrow">{mode === "crib" ? "Crib" : "Watch"}</div>
           <p className="media-status">{status}</p>
-          <p className="faint">Live on this Wi-Fi only. Nothing is recorded or uploaded.</p>
+          <p className="faint">Live on this Wi-Fi only. Nothing is recorded or uploaded. Camera runs only while someone is watching.</p>
           {media.error ? <p className="warn-text">{media.error}</p> : null}
-          {waitingWatch ? <p className="muted">Waiting for the other phone to tap Watch the crib.</p> : null}
-          {waitingCrib ? <p className="muted">Waiting for the crib phone. Keep that phone open and plugged in.</p> : null}
+          {mode === "crib" && media.passkey ? (
+            <button
+              className="passkey-code"
+              type="button"
+              onClick={() => void navigator.clipboard.writeText(media.passkey)}
+              aria-label="Copy crib passkey"
+            >
+              {formatPasskey(media.passkey)}
+            </button>
+          ) : null}
+          {mode === "crib" && media.watchers.length > 0 ? (
+            <p className="muted">
+              {media.watchers.map((watcher) => watcher.name).join(", ")} {media.watchers.length === 1 ? "is" : "are"} watching.
+            </p>
+          ) : null}
+          {mode === "crib" && media.phase === "waiting" && media.watchers.length === 0 ? (
+            <p className="muted">Camera is off. It starts when a parent opens Watch and types this passkey. Leave this screen on and plug the phone in.</p>
+          ) : null}
         </div>
         <div className="stack">
+          {showJoin && (
+            <>
+              <p className="muted">Type the 6 digits on the crib phone. Both parents can watch at the same time.</p>
+              <label className="field">
+                Crib passkey
+                <input
+                  className="passkey-input"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  autoCorrect="off"
+                  autoCapitalize="off"
+                  spellCheck={false}
+                  pattern="[0-9]*"
+                  maxLength={7}
+                  autoFocus
+                  value={formatPasskey(digits)}
+                  onChange={(e) => {
+                    const next = normalizePasskey(e.target.value);
+                    setDigits(next);
+                    if (next.length === 6) void join(next);
+                  }}
+                  aria-label="Six-digit crib passkey"
+                />
+              </label>
+              {joinError ? <p className="warn-text">{joinError}</p> : null}
+              <button className="primary" type="button" disabled={digits.length !== 6 || joining} onClick={() => void join(digits)}>
+                {joining ? "Connecting…" : "Watch"}
+              </button>
+            </>
+          )}
           {mode === "crib" && media.localStream && (
             <div className="row">
               <button
@@ -84,13 +144,13 @@ export function CribWatchPage({
               </button>
             </div>
           )}
-          {mode === "watch" && live && (
+          {mode === "watch" && media.phase === "live" && (
             <button className={soundOn ? "primary" : "secondary"} type="button" onClick={() => setSoundOn((on) => !on)}>
               {soundOn ? "Mute" : "Unmute sound"}
             </button>
           )}
-          {mode === "crib" && !media.localStream && (
-            <button className="primary" type="button" onClick={() => void startCrib()}>
+          {mode === "crib" && !media.localStream && (media.error || media.watchers.length > 0) && (
+            <button className="primary" type="button" onClick={() => void retryCribCamera()}>
               Start camera
             </button>
           )}
@@ -115,19 +175,34 @@ export function CribWatchPage({
   );
 }
 
-function statusLine(mode: "crib" | "watch", phase: MediaPhase, linked: boolean, partner: string) {
-  if (!linked) return "Phones are not linked on this Wi-Fi.";
+function statusLine(mode: "crib" | "watch", phase: MediaPhase, liveCount: number, watcherCount: number) {
+  if (mode === "watch") {
+    switch (phase) {
+      case "live":
+        return "Live";
+      case "starting":
+        return "Finding the crib phone…";
+      case "waiting":
+        return "Waiting for the crib camera…";
+      case "idle":
+      case "error":
+        return "Enter the crib passkey to start the picture.";
+      default: {
+        const _never: never = phase;
+        return _never;
+      }
+    }
+  }
   switch (phase) {
     case "live":
-      return partner ? `Live with ${partner}` : "Live";
+      return liveCount ? `Live · ${liveCount} watching` : "Live";
     case "starting":
-      return "Opening camera…";
+      return "Getting the crib ready…";
     case "waiting":
+      return watcherCount ? "Starting camera for a watcher…" : "Standby · camera off";
     case "idle":
     case "error":
-      return mode === "crib"
-        ? "Camera on this phone. Picture stays on the home network."
-        : "Ready to watch. Picture stays on the home network.";
+      return "Crib is not streaming yet.";
     default: {
       const _never: never = phase;
       return _never;

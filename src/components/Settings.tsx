@@ -179,9 +179,9 @@ export function SettingsPage({
       <section className="card quiet">
         <h2>Crib camera</h2>
         <p className="muted">
-          Put one linked phone on the crib and watch from the other. The picture stays on this Wi-Fi. It is live only —
-          nothing is recorded. Keep the crib phone plugged in with this screen open. A dark room needs a night light;
-          a phone has no infrared camera.
+          Put a spare phone on the crib and leave that screen on. The camera stays off until a parent taps Watch.
+          Both parents can watch at once. The picture stays on this Wi-Fi and is never recorded. Plug the crib phone
+          in and set Auto-Lock to Never. A dark room needs a night light.
         </p>
         <div className="stack">
           <button className="primary" type="button" onClick={onCrib}>
@@ -196,7 +196,7 @@ export function SettingsPage({
       <section className="card quiet">
         <h2>Privacy</h2>
         <p className="muted">
-        Events stay on this phone until you link on this Wi-Fi. A 6-digit passkey matches the two phones, then logs copy over the local network — not into a cloud baby record. There is still no catch-up while the other phone is off the network; connect again when you are both home. Crib video uses that same link and is never stored.
+        Events stay on this phone until you link on this Wi-Fi. A 6-digit passkey matches the two phones, then logs copy over the local network — not into a cloud baby record. There is still no catch-up while the other phone is off the network; connect again when you are both home. Crib video is a separate live window: the camera runs only while someone is watching, and frames stay on the home network.
         </p>
       </section>
 

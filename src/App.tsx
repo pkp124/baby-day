@@ -41,7 +41,7 @@ import {
   switchFeedSide,
 } from "./lib/repo";
 import { useLan } from "./lib/lan";
-import { startCrib, startWatch } from "./lib/lanMedia";
+import { startCrib } from "./lib/lanMedia";
 import type { CareEvent, FeedData, FeedMethod } from "./lib/types";
 
 type SheetKind =
@@ -83,10 +83,7 @@ export default function App() {
             store.setPage("crib");
             void startCrib();
           }}
-          onWatch={() => {
-            store.setPage("watch");
-            void startWatch();
-          }}
+          onWatch={() => store.setPage("watch")}
         />
         <Dock
           page="settings"

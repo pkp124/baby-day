@@ -1,32 +1,29 @@
 import { describe, expect, it } from "vitest";
-import { parseMediaWire } from "./lanMedia";
+import { cameraShouldRun } from "./lanMedia";
 import { hashFromPage, pageFromHash } from "./pages";
+import { topicForCribPasskey } from "./pairCode";
+import { parsePairMessage, serializePairMessage, type PairWire } from "./pairMailbox";
 
-describe("media wire", () => {
-  it("accepts crib and watch ready messages", () => {
-    expect(parseMediaWire({ kind: "media-ready", role: "crib" })).toEqual({
-      kind: "media-ready",
-      role: "crib",
-    });
-    expect(parseMediaWire({ kind: "media-ready", role: "watch" })).toEqual({
-      kind: "media-ready",
-      role: "watch",
-    });
+describe("on-demand crib camera", () => {
+  it("keeps the camera off until someone is watching", () => {
+    expect(cameraShouldRun(0)).toBe(false);
+    expect(cameraShouldRun(1)).toBe(true);
+    expect(cameraShouldRun(2)).toBe(true);
   });
 
-  it("accepts offer, answer, and bye", () => {
-    expect(parseMediaWire({ kind: "media-offer", sdp: "v=0" })).toEqual({ kind: "media-offer", sdp: "v=0" });
-    expect(parseMediaWire({ kind: "media-answer", sdp: "v=0" })).toEqual({ kind: "media-answer", sdp: "v=0" });
-    expect(parseMediaWire({ kind: "media-bye" })).toEqual({ kind: "media-bye" });
+  it("uses a crib mailbox topic that does not collide with event pairing", () => {
+    expect(topicForCribPasskey("482 107")).toBe("bdcrib482107");
   });
+});
 
-  it("rejects event sync messages and incomplete media payloads", () => {
-    expect(parseMediaWire({ kind: "hello", name: "Ada" })).toBeNull();
-    expect(parseMediaWire({ kind: "event", event: { id: "1" } })).toBeNull();
-    expect(parseMediaWire({ kind: "media-ready", role: "guest" })).toBeNull();
-    expect(parseMediaWire({ kind: "media-offer", sdp: "" })).toBeNull();
-    expect(parseMediaWire({ kind: "media-answer" })).toBeNull();
-    expect(parseMediaWire(null)).toBeNull();
+describe("crib room signaling", () => {
+  it("round-trips a targeted offer, answer, and bye", () => {
+    const hello: PairWire = { v: 1, from: "aa", k: "hello", name: "Ada" };
+    const offer: PairWire = { v: 1, from: "crib", to: "aa", k: "offer", signal: "v=0", name: "Crib" };
+    const bye: PairWire = { v: 1, from: "aa", k: "bye" };
+    expect(parsePairMessage(serializePairMessage(hello))).toEqual(hello);
+    expect(parsePairMessage(serializePairMessage(offer))).toEqual(offer);
+    expect(parsePairMessage(serializePairMessage(bye))).toEqual(bye);
   });
 });
 

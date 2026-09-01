@@ -34,7 +34,7 @@ It is a shared handover layer, not a medical or coaching product.
 - Export JSON/CSV and copy 48-hour summary
 - Optional Supabase sync + invite (not for real baby data until encrypted)
 - Local Wi-Fi handover via 6-digit passkey (QR fallback) + WebRTC (host-only ICE)
-- Crib camera / watch screens over that same LAN link (live video only, not stored)
+- Crib camera / watch screens: camera on only while someone is watching, both parents can join, LAN-only
 - Installable PWA, dark UI
 
 ## Out of scope until you have used it for a week
