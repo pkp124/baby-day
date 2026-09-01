@@ -4,7 +4,9 @@ Assessment of a crib-phone → parent-phone video link, without buying a camera,
 
 **Verdict:** do not start a new repo, and do not start a native app. The current PWA is enough to try this. The hard limits are the phones themselves (dark room, screen must stay on), not the stack.
 
-This is a **live window**, not a camera product and not part of the care log. It should stay optional, LAN-only, and unrecorded.
+This is a **live window**, not a camera product and not part of the care log. It is optional, LAN-only, and unrecorded.
+
+**Built:** Settings → **Use this phone as crib** / **Watch the crib**. Requires the existing **This Wi-Fi** link. Hashes `#/crib` and `#/watch` keep the crib phone on that screen after a reload.
 
 ## What you are asking for
 

@@ -2,6 +2,16 @@ import { useSyncExternalStore } from "react";
 import { toDataURL } from "qrcode";
 import { db, getSettings, onEventCommit, putEvent, saveSettings } from "./db";
 import { digestOf, eventsNeeded, hostOnlySdp, shouldApplyIncoming } from "./lanMerge";
+import {
+  attachLanLinked,
+  attachMediaSend,
+  handleMediaWire,
+  mediaChannelClosed,
+  mediaChannelOpen,
+  parseMediaWire,
+  type MediaWire,
+} from "./lanMedia";
+import { localHostSdp, newLanPeer } from "./lanRtc";
 import { generatePasskey, isValidPasskey, normalizePasskey } from "./pairCode";
 import { openPairMailbox, type PairMailbox, type PairWire } from "./pairMailbox";
 import type { CareEvent } from "./types";
@@ -82,7 +92,7 @@ type HelloMsg = {
 type DigestMsg = { kind: "digest"; items: ReturnType<typeof digestOf> };
 type EventsMsg = { kind: "events"; events: CareEvent[] };
 type EventMsg = { kind: "event"; event: CareEvent };
-type Wire = HelloMsg | DigestMsg | EventsMsg | EventMsg;
+type Wire = HelloMsg | DigestMsg | EventsMsg | EventMsg | MediaWire;
 
 function b64url(bytes: Uint8Array) {
   let bin = "";
@@ -118,28 +128,8 @@ async function toQr(text: string) {
   return toDataURL(text, { margin: 1, width: 360, errorCorrectionLevel: "M", color: { dark: "#1c1712", light: "#f6efe6" } });
 }
 
-function waitGathering(peer: RTCPeerConnection) {
-  if (peer.iceGatheringState === "complete") return Promise.resolve();
-  return new Promise<void>((resolve) => {
-    const done = () => {
-      peer.removeEventListener("icegatheringstatechange", onChange);
-      resolve();
-    };
-    const onChange = () => {
-      if (peer.iceGatheringState === "complete") done();
-    };
-    peer.addEventListener("icegatheringstatechange", onChange);
-    window.setTimeout(done, 3000);
-  });
-}
-
-function newPeer() {
-  return new RTCPeerConnection({ iceServers: [], iceCandidatePoolSize: 0 });
-}
-
 async function localPayload(type: "offer" | "answer", name: string, peer: RTCPeerConnection) {
-  await waitGathering(peer);
-  const sdp = hostOnlySdp(peer.localDescription?.sdp ?? "");
+  const sdp = await localHostSdp(peer);
   return encodeSignal({ t: type, sdp, name });
 }
 
@@ -147,43 +137,60 @@ function send(msg: Wire) {
   if (channel?.readyState === "open") channel.send(JSON.stringify(msg));
 }
 
+attachMediaSend((msg) => {
+  if (channel?.readyState !== "open") return false;
+  channel.send(JSON.stringify(msg));
+  return true;
+});
+attachLanLinked(() => state.phase === "connected");
+
 async function onWire(msg: Wire) {
   const settings = await getSettings();
-  if (msg.kind === "hello") {
-    emit({ partnerName: msg.name });
-    if (role === "guest") {
-      const events = await db.events.toArray();
-      for (const event of events) {
-        if (event.familyId !== msg.familyId || event.babyId !== msg.babyId) {
-          await db.events.put({ ...event, familyId: msg.familyId, babyId: msg.babyId });
+  switch (msg.kind) {
+    case "media-ready":
+    case "media-offer":
+    case "media-answer":
+    case "media-bye":
+      await handleMediaWire(msg);
+      return;
+    case "hello": {
+      emit({ partnerName: msg.name });
+      if (role === "guest") {
+        const events = await db.events.toArray();
+        for (const event of events) {
+          if (event.familyId !== msg.familyId || event.babyId !== msg.babyId) {
+            await db.events.put({ ...event, familyId: msg.familyId, babyId: msg.babyId });
+          }
         }
+        await saveSettings({
+          familyId: msg.familyId,
+          babyId: msg.babyId,
+          babyName: msg.babyName || settings.babyName,
+        });
       }
-      await saveSettings({
-        familyId: msg.familyId,
-        babyId: msg.babyId,
-        babyName: msg.babyName || settings.babyName,
-      });
+      send({ kind: "digest", items: digestOf(await db.events.toArray()) });
+      return;
     }
-    const events = await db.events.toArray();
-    send({ kind: "digest", items: digestOf(events) });
-    return;
-  }
-  if (msg.kind === "digest") {
-    const mine = await db.events.toArray();
-    const needed = eventsNeeded(msg.items, mine);
-    for (let i = 0; i < needed.length; i += 40) {
-      send({ kind: "events", events: needed.slice(i, i + 40) });
+    case "digest": {
+      const mine = await db.events.toArray();
+      const needed = eventsNeeded(msg.items, mine);
+      for (let i = 0; i < needed.length; i += 40) {
+        send({ kind: "events", events: needed.slice(i, i + 40) });
+      }
+      return;
     }
-    return;
-  }
-  if (msg.kind === "events") {
-    for (const incoming of msg.events) await applyIncoming(incoming);
-    emit({ lastSyncAt: new Date().toISOString() });
-    return;
-  }
-  if (msg.kind === "event") {
-    await applyIncoming(msg.event);
-    emit({ lastSyncAt: new Date().toISOString() });
+    case "events":
+      for (const incoming of msg.events) await applyIncoming(incoming);
+      emit({ lastSyncAt: new Date().toISOString() });
+      return;
+    case "event":
+      await applyIncoming(msg.event);
+      emit({ lastSyncAt: new Date().toISOString() });
+      return;
+    default: {
+      const _never: never = msg;
+      return _never;
+    }
   }
 }
 
@@ -213,13 +220,21 @@ function bindChannel(next: RTCDataChannel) {
     closeMailbox();
     emit({ phase: "connected", error: "", lastSyncAt: new Date().toISOString() });
     void hello();
+    mediaChannelOpen();
   };
   next.onclose = () => {
+    mediaChannelClosed();
     if (state.phase === "connected") emit({ phase: "idle", pairing: "off", passkey: "", error: "" });
   };
   next.onmessage = (ev) => {
     try {
-      void onWire(JSON.parse(String(ev.data)) as Wire);
+      const parsed: unknown = JSON.parse(String(ev.data));
+      const media = parseMediaWire(parsed);
+      if (media) {
+        void handleMediaWire(media);
+        return;
+      }
+      void onWire(parsed as Wire);
     } catch (err) {
       console.error(err);
     }
@@ -284,6 +299,7 @@ function pairError(err: unknown) {
 export function disconnectLan() {
   clearPairTimer();
   closeMailbox();
+  mediaChannelClosed();
   teardownPeer();
   guestBusy = false;
   const partner = state.partnerName;
@@ -335,7 +351,7 @@ async function beginHostOffer(pairing: PairingMode) {
   role = "host";
   watchLocal();
   const settings = await getSettings();
-  pc = newPeer();
+  pc = newLanPeer();
   bindChannel(pc.createDataChannel("babyday", { ordered: true }));
   const offer = await pc.createOffer();
   await pc.setLocalDescription(offer);
@@ -435,7 +451,7 @@ async function beginGuestAnswer(raw: string, pairing: PairingMode) {
   const settings = await getSettings();
   const signal = await decodeSignal(raw);
   if (signal.t !== "offer") throw new Error("That code is not an offer from the other phone");
-  pc = newPeer();
+  pc = newLanPeer();
   pc.ondatachannel = (ev) => bindChannel(ev.channel);
   await pc.setRemoteDescription({ type: "offer", sdp: hostOnlySdp(signal.sdp) });
   const answer = await pc.createAnswer();

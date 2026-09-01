@@ -597,3 +597,49 @@ h1, h2, h3 { font-family: var(--display); font-weight: 640; margin: 0; }
 .swatch.diaper { background: var(--diaper); }
 .swatch.pump { background: var(--pump); }
 .swatch.temp { background: var(--temp); }
+
+.app.media-app {
+  max-width: none;
+  padding: 0;
+  min-height: 100dvh;
+  background: #000;
+}
+.media-stage {
+  position: relative;
+  min-height: 100dvh;
+  background: #000;
+}
+.media-stage video,
+.media-blank {
+  display: block;
+  width: 100%;
+  height: 100dvh;
+  object-fit: cover;
+  background: #000;
+}
+.media-stage video.mirror {
+  transform: scaleX(-1);
+}
+.media-hud {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 12px;
+  padding:
+    calc(14px + env(safe-area-inset-top, 0px))
+    14px
+    calc(16px + env(safe-area-inset-bottom, 0px));
+  background: linear-gradient(180deg, rgba(8, 6, 5, 0.72), transparent 32%, transparent 58%, rgba(8, 6, 5, 0.78));
+}
+.media-status {
+  margin: 6px 0 4px;
+  font-family: var(--display);
+  font-size: 1.35rem;
+}
+.media-hud .stack .primary,
+.media-hud .stack .secondary,
+.media-hud .stack .danger {
+  width: 100%;
+}

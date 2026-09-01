@@ -17,12 +17,16 @@ export function SettingsPage({
   needRefresh,
   onReload,
   onRefreshSync,
+  onCrib,
+  onWatch,
 }: {
   settings: Settings;
   sync: SyncState;
   needRefresh: boolean;
   onReload: () => void;
   onRefreshSync: () => void;
+  onCrib: () => void;
+  onWatch: () => void;
 }) {
   const [invite, setInvite] = useState("");
   const [join, setJoin] = useState("");
@@ -173,9 +177,26 @@ export function SettingsPage({
       <LanCard />
 
       <section className="card quiet">
+        <h2>Crib camera</h2>
+        <p className="muted">
+          Put one linked phone on the crib and watch from the other. The picture stays on this Wi-Fi. It is live only —
+          nothing is recorded. Keep the crib phone plugged in with this screen open. A dark room needs a night light;
+          a phone has no infrared camera.
+        </p>
+        <div className="stack">
+          <button className="primary" type="button" onClick={onCrib}>
+            Use this phone as crib
+          </button>
+          <button className="secondary" type="button" onClick={onWatch}>
+            Watch the crib
+          </button>
+        </div>
+      </section>
+
+      <section className="card quiet">
         <h2>Privacy</h2>
         <p className="muted">
-          Events stay on this phone until you link on this Wi-Fi. A 6-digit passkey matches the two phones, then logs copy over the local network — not into a cloud baby record. There is still no catch-up while the other phone is off the network; connect again when you are both home.
+        Events stay on this phone until you link on this Wi-Fi. A 6-digit passkey matches the two phones, then logs copy over the local network — not into a cloud baby record. There is still no catch-up while the other phone is off the network; connect again when you are both home. Crib video uses that same link and is never stored.
         </p>
       </section>
 

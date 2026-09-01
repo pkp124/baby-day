@@ -2,6 +2,7 @@ import { liveQuery } from "dexie";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRegisterSW } from "virtual:pwa-register/react";
 import { db, getSettings, saveSettings } from "../lib/db";
+import { applyPageHash, pageFromHash, type AppPage } from "../lib/pages";
 import { syncNow, type SyncState } from "../lib/sync";
 import { getSupabase } from "../lib/supabase";
 import type { CareEvent, Settings } from "../lib/types";
@@ -11,7 +12,7 @@ export function useBabyDay() {
   const [settings, setSettings] = useState<Settings | null>(null);
   const [events, setEvents] = useState<CareEvent[]>([]);
   const [pending, setPending] = useState(0);
-  const [page, setPage] = useState<"home" | "settings" | "report">("home");
+  const [page, setPageState] = useState<AppPage>(() => pageFromHash(window.location.hash));
   const [toast, setToast] = useState<{ message: string; undo?: () => void } | null>(null);
   const [sessionStartedAt, setSessionStartedAt] = useState<string | null>(null);
   const [sync, setSync] = useState<SyncState>({
@@ -51,6 +52,16 @@ export function useBabyDay() {
   }, []);
 
   const live = useMemo(() => events.filter((e) => !e.deletedAt), [events]);
+
+  useEffect(() => {
+    const sync = () => setPageState(pageFromHash(window.location.hash));
+    window.addEventListener("hashchange", sync);
+    window.addEventListener("popstate", sync);
+    return () => {
+      window.removeEventListener("hashchange", sync);
+      window.removeEventListener("popstate", sync);
+    };
+  }, []);
 
   useEffect(() => {
     const onVis = () => {
@@ -95,6 +106,11 @@ export function useBabyDay() {
       return created > left && created <= back;
     });
   }, [live, settings?.lastVisitAt, sessionStartedAt]);
+
+  const setPage = useCallback((next: AppPage) => {
+    setPageState(next);
+    applyPageHash(next);
+  }, []);
 
   return {
     ready: Boolean(settings),
