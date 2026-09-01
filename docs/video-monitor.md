@@ -42,7 +42,7 @@ Buy a native shell only if, after using the PWA, the remaining pain is specifica
 Already in this repo:
 
 - 6-digit passkey + QR pairing
-- WebRTC with **host-only ICE** (no STUN, no TURN) so media candidates stay on the LAN
+- WebRTC with **host-only ICE for event sync** (no STUN, no TURN). Crib video may use STUN so phones can discover a LAN path when iOS hides addresses as `.local`; RTP still goes phone-to-phone. Relay/TURN candidates are dropped. Video frames never go through the mailbox.
 - A short-lived public mailbox for the handshake only (`ntfy.sh` by default). That mailbox must never carry video frames.
 - Screen wake lock while a timer runs
 - `getUserMedia` for the QR scanner
@@ -55,7 +55,7 @@ What a first version would add:
 - Reconnect when Wi-Fi blips. The current event link already drops when a phone locks; video will be worse, not better.
 - Copy that states: live only, not saved, not uploaded.
 
-Do **not** write video into IndexedDB, git, or Supabase. Do **not** add STUN/TURN “so it works when someone is out.” Off-home viewing is a different product and would send media through a relay.
+Do **not** write video into IndexedDB, git, or Supabase. Do **not** add TURN “so it works when someone is out.” Off-home viewing is a different product and would send media through a relay.
 
 ## Constraints you have to accept (this is the real product)
 
@@ -97,10 +97,10 @@ After the first save, you never need to read the crib screen to connect. Both pa
 
 | Path | Allowed? |
 | --- | --- |
-| RTP/WebRTC on the home LAN, host ICE only | Yes |
+| RTP/WebRTC on the home LAN (host ICE; crib video may also use STUN srflx) | Yes |
 | Handshake mailbox (passkey / ntfy) carrying SDP, not frames | Yes, same as event pairing |
 | Recording to the phone, cloud, or this repo | No in v1 |
-| STUN/TURN, cloud SFU, “watch from the office” | No, unless you explicitly drop the “stays in the lab” rule |
+| TURN, cloud SFU, “watch from the office” | No, unless you explicitly drop the “stays in the lab” rule |
 
 The host of GitHub Pages never sees frames. The mailbox never sees frames. If both phones are on guest Wi-Fi with client isolation, it will fail the same way event sync already fails.
 
@@ -110,7 +110,7 @@ The host of GitHub Pages never sees frames. The mailbox never sees frames. If bo
 Crib phone (screen on, camera off)
   waits for a Watch passkey join
         │  on first watcher: open camera
-        │  WebRTC media, host-only ICE, one stream per watcher
+        │  WebRTC media, LAN P2P (no TURN), one stream per watcher
         ▼
 Parent phones (Watch)
   <video>  — live only, nothing persisted

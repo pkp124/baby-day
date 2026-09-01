@@ -1,3 +1,4 @@
+import { gunzipBd1, gzipToBd1, isBd1 } from "./gzip";
 import { topicForPasskey } from "./pairCode";
 
 export type PairKind = "hello" | "offer" | "answer" | "bye";
@@ -16,6 +17,9 @@ export type PairMailbox = {
   publish: (msg: Omit<PairWire, "v" | "from">) => Promise<void>;
   close: () => void;
 };
+
+/** ntfy.sh stores larger bodies as attachments and leaves `message` empty. */
+export const NTFY_MAX_MESSAGE_BYTES = 4096;
 
 export function mailboxBaseUrl() {
   const raw = import.meta.env.VITE_PAIR_MAILBOX_URL || "https://ntfy.sh";
@@ -40,15 +44,57 @@ export function parsePairMessage(raw: string): PairWire | null {
   }
 }
 
-export function parseMailboxSseData(raw: string): PairWire | null {
+type NtfySse = {
+  event?: string;
+  message?: string;
+  attachment?: { url?: string };
+};
+
+function mailboxOrigin() {
   try {
-    const wrapper = JSON.parse(raw) as { event?: string; message?: string };
+    return new URL(mailboxBaseUrl()).origin;
+  } catch {
+    return "";
+  }
+}
+
+function isMailboxAttachmentUrl(url: string) {
+  try {
+    return new URL(url).origin === mailboxOrigin();
+  } catch {
+    return false;
+  }
+}
+
+async function mailboxPayloadText(wrapper: NtfySse): Promise<string | null> {
+  const url = wrapper.attachment?.url;
+  if (typeof url === "string" && isMailboxAttachmentUrl(url)) {
+    const res = await fetch(url);
+    if (res.ok) return await res.text();
+  }
+  if (typeof wrapper.message !== "string") return null;
+  return wrapper.message;
+}
+
+export async function parseMailboxSseData(raw: string): Promise<PairWire | null> {
+  try {
+    const wrapper = JSON.parse(raw) as NtfySse;
     if (wrapper.event && wrapper.event !== "message") return null;
-    if (typeof wrapper.message !== "string") return null;
-    return parsePairMessage(wrapper.message);
+    const payload = await mailboxPayloadText(wrapper);
+    if (payload == null) return null;
+    const text = payload.trim();
+    if (!text) return null;
+    const json = isBd1(text) ? await gunzipBd1(text) : text;
+    return parsePairMessage(json);
   } catch {
     return null;
   }
+}
+
+export async function encodeMailboxBody(msg: PairWire) {
+  const json = serializePairMessage(msg);
+  if (json.length < NTFY_MAX_MESSAGE_BYTES) return json;
+  return gzipToBd1(json);
 }
 
 function randomFrom() {
@@ -95,9 +141,10 @@ export async function openPairMailbox(
 
   const bind = (source: EventSource) => {
     source.onmessage = (ev) => {
-      const msg = parseMailboxSseData(String(ev.data));
-      if (!msg || msg.from === from) return;
-      onMessage(msg);
+      void parseMailboxSseData(String(ev.data)).then((msg) => {
+        if (closed || !msg || msg.from === from) return;
+        onMessage(msg);
+      });
     };
     source.onerror = () => {
       if (closed || source.readyState !== EventSource.CLOSED) return;
@@ -118,7 +165,7 @@ export async function openPairMailbox(
     from,
     async publish(partial) {
       if (closed) return;
-      const body = serializePairMessage({ v: 1, from, ...partial });
+      const body = await encodeMailboxBody({ v: 1, from, ...partial });
       const res = await fetch(`${base}/${topic}`, {
         method: "POST",
         headers: { "Content-Type": "text/plain", TTL: "180" },

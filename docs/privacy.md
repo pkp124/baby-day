@@ -76,4 +76,4 @@ Until C exists, connecting Supabase would upload plaintext. The UI should keep s
 - Trust “the URL is secret” or “the family code is long enough.”
 - Use the phone’s screenshot folder as a diary.
 - Build cry/audio upload. That is a different, worse privacy product.
-- Put a baby video stream through STUN/TURN, a cloud SFU, or any store. A crib-phone window, if we ever build one, is live LAN WebRTC only. See [video-monitor.md](./video-monitor.md).
+- Put a baby video stream through TURN, a cloud SFU, or any store. A crib-phone window is live LAN WebRTC. STUN may be used only to discover addresses (iOS mDNS); video itself is not relayed. See [video-monitor.md](./video-monitor.md).

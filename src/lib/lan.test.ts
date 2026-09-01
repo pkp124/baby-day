@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { digestOf, eventsNeeded, hostOnlySdp, shouldApplyIncoming } from "./lanMerge";
+import { digestOf, eventsNeeded, hostOnlySdp, lanMediaSdp, shouldApplyIncoming } from "./lanMerge";
 import type { CareEvent } from "./types";
 
 function event(partial: Partial<CareEvent> & Pick<CareEvent, "id" | "rev" | "updatedAt">): CareEvent {
@@ -51,6 +51,22 @@ describe("host-only ICE", () => {
     const next = hostOnlySdp(sdp);
     expect(next).toContain("typ host");
     expect(next).not.toContain("typ srflx");
+    expect(next).not.toContain("typ relay");
+  });
+});
+
+describe("crib media ICE", () => {
+  it("keeps host and srflx and drops relay", () => {
+    const sdp = [
+      "v=0",
+      "a=candidate:1 1 udp 1 192.168.1.8 9 typ host",
+      "a=candidate:2 1 udp 1 1.2.3.4 9 typ srflx raddr 192.168.1.8",
+      "a=candidate:3 1 udp 1 10.0.0.1 9 typ relay",
+      "",
+    ].join("\r\n");
+    const next = lanMediaSdp(sdp);
+    expect(next).toContain("typ host");
+    expect(next).toContain("typ srflx");
     expect(next).not.toContain("typ relay");
   });
 });

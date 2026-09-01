@@ -7,11 +7,21 @@ export function shouldApplyIncoming(local: CareEvent | undefined, incoming: Care
 }
 
 export function hostOnlySdp(sdp: string) {
+  return filterIceCandidates(sdp, (typ) => typ === "host");
+}
+
+/** Crib video: keep LAN host plus STUN srflx so iOS mDNS `.local` hosts can reach Android. Never relay. */
+export function lanMediaSdp(sdp: string) {
+  return filterIceCandidates(sdp, (typ) => typ === "host" || typ === "srflx");
+}
+
+function filterIceCandidates(sdp: string, keepTyp: (typ: string) => boolean) {
   return sdp
     .split(/\r?\n/)
     .filter((line) => {
       if (!line.startsWith("a=candidate:")) return true;
-      return /\styp\shost\b/.test(line);
+      const typ = line.match(/\styp\s(\S+)/)?.[1];
+      return Boolean(typ && keepTyp(typ));
     })
     .join("\r\n");
 }
