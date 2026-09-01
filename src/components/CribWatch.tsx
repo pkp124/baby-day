@@ -70,7 +70,7 @@ export function CribWatchPage({
           {waitingCrib ? <p className="muted">Waiting for the crib phone. Keep that phone open and plugged in.</p> : null}
         </div>
         <div className="stack">
-          {mode === "crib" && (
+          {mode === "crib" && media.localStream && (
             <div className="row">
               <button
                 className="secondary grow"
