@@ -34,13 +34,14 @@ It is a shared handover layer, not a medical or coaching product.
 - Export JSON/CSV and copy 48-hour summary
 - Optional Supabase sync + invite (not for real baby data until encrypted)
 - Local Wi-Fi handover via 6-digit passkey (QR fallback) + WebRTC (host-only ICE)
+- Crib camera / watch screens over that same LAN link (live video only, not stored)
 - Installable PWA, dark UI
 
 ## Out of scope until you have used it for a week
 
 Charts, notifications, appointments, milk inventory, custom event builder, multiple babies, guest/nurse roles.
 
-A **crib-phone video window** is a separate optional mode, not part of handover. Assessment: [video-monitor.md](./video-monitor.md). Do not add it until the logging app is the daily driver. If we add it: same repo, same PWA, LAN-only WebRTC, no recording, no native app first.
+A **crib-phone video window** is a separate optional mode, not part of handover. Details: [video-monitor.md](./video-monitor.md). Same repo, same PWA, LAN-only WebRTC, no recording.
 
 ## Sharing between two phones
 

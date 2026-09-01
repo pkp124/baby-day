@@ -16,8 +16,9 @@ import {
   TempSheet,
   WeightSheet,
 } from "./components/Sheets";
-import { SettingsPage } from "./components/Settings";
+import { CribWatchPage } from "./components/CribWatch";
 import { Dock } from "./components/Dock";
+import { SettingsPage } from "./components/Settings";
 import { activeSession, dayTotals, feedSeconds, fridgeEstimateMl, nextBreastSide, vitaminLabel } from "./lib/domain";
 import { careDayFor, formatCareDayLabel, formatDuration, formatDurationClock } from "./lib/time";
 import { displayToMl } from "./lib/units";
@@ -40,6 +41,7 @@ import {
   switchFeedSide,
 } from "./lib/repo";
 import { useLan } from "./lib/lan";
+import { startCrib, startWatch } from "./lib/lanMedia";
 import type { CareEvent, FeedData, FeedMethod } from "./lib/types";
 
 type SheetKind =
@@ -77,6 +79,14 @@ export default function App() {
           needRefresh={needRefresh}
           onReload={reload}
           onRefreshSync={() => void store.refreshSync()}
+          onCrib={() => {
+            store.setPage("crib");
+            void startCrib();
+          }}
+          onWatch={() => {
+            store.setPage("watch");
+            void startWatch();
+          }}
         />
         <Dock
           page="settings"
@@ -107,6 +117,14 @@ export default function App() {
           needRefresh={needRefresh}
           onReload={reload}
         />
+      </div>
+    );
+  }
+
+  if (store.page === "crib" || store.page === "watch") {
+    return (
+      <div className={needRefresh ? "app media-app has-update" : "app media-app"}>
+        <CribWatchPage mode={store.page} onBack={() => store.setPage("settings")} />
       </div>
     );
   }
