@@ -40,6 +40,8 @@ It is a shared handover layer, not a medical or coaching product.
 
 Charts, notifications, appointments, milk inventory, custom event builder, multiple babies, guest/nurse roles.
 
+A **crib-phone video window** is a separate optional mode, not part of handover. Assessment: [video-monitor.md](./video-monitor.md). Do not add it until the logging app is the daily driver. If we add it: same repo, same PWA, LAN-only WebRTC, no recording, no native app first.
+
 ## Sharing between two phones
 
 **This Wi-Fi** (Settings): 6-digit passkey over the local network (QR still works). Events never go to a server. Both apps must be open on the same network. Catch up by linking again when you are both home.

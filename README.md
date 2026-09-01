@@ -107,3 +107,4 @@ A custom domain is nicer for PWA install than `username.github.io/baby-day/`. Th
 - [Hosting and backend](docs/hosting-and-backend.md)
 - [Original idea](docs/idea-and-plan.md)
 - [Plan review](docs/plan-review.md)
+- [Crib-phone video](docs/video-monitor.md) — assessment only; not built. Same PWA, LAN-only, no extra camera.
