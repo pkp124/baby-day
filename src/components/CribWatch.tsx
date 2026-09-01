@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useWakeLock } from "../hooks/useNow";
+import { getSettings } from "../lib/db";
 import {
   setCribFacing,
   setCribMic,
@@ -10,7 +11,7 @@ import {
   useMedia,
   type MediaPhase,
 } from "../lib/lanMedia";
-import { formatPasskey, normalizePasskey } from "../lib/pairCode";
+import { formatPasskey, isValidPasskey, normalizePasskey } from "../lib/pairCode";
 
 export function CribWatchPage({
   mode,
@@ -28,7 +29,20 @@ export function CribWatchPage({
   useWakeLock(true, true);
 
   useEffect(() => {
+    void getSettings().then((settings) => {
+      const code = normalizePasskey(settings.cribPasskey);
+      if (code) setDigits(code);
+    });
+  }, []);
+
+  useEffect(() => {
     if (mode === "crib") void startCrib();
+    if (mode === "watch") {
+      void getSettings().then((settings) => {
+        const code = normalizePasskey(settings.cribPasskey);
+        if (isValidPasskey(code)) void startWatch(code);
+      });
+    }
     return () => stopMedia();
   }, [mode]);
 
@@ -96,13 +110,17 @@ export function CribWatchPage({
             </p>
           ) : null}
           {mode === "crib" && media.phase === "waiting" && media.watchers.length === 0 ? (
-            <p className="muted">Camera is off. It starts when a parent opens Watch and types this passkey. Leave this screen on and plug the phone in.</p>
+            <p className="muted">Camera is off until someone downstairs opens Watch. This code stays the same — save it in Settings on your phone so you do not need to walk upstairs.</p>
           ) : null}
         </div>
         <div className="stack">
           {showJoin && (
             <>
-              <p className="muted">Type the 6 digits on the crib phone. Both parents can watch at the same time.</p>
+              <p className="muted">
+                {isValidPasskey(normalizePasskey(digits)) || media.passkey
+                  ? "Same home Wi-Fi reaches downstairs. After the first save, this phone remembers the code."
+                  : "Type the crib passkey once. Both parents can watch. Same home Wi-Fi is enough from another floor."}
+              </p>
               <label className="field">
                 Crib passkey
                 <input
@@ -186,7 +204,7 @@ function statusLine(mode: "crib" | "watch", phase: MediaPhase, liveCount: number
         return "Waiting for the crib camera…";
       case "idle":
       case "error":
-        return "Enter the crib passkey to start the picture.";
+        return "Use the saved crib passkey, or type it once.";
       default: {
         const _never: never = phase;
         return _never;

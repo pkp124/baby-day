@@ -6,7 +6,7 @@ Assessment of a crib-phone → parent-phone video link, without buying a camera,
 
 This is a **live window**, not a camera product and not part of the care log. It is optional, LAN-only, and unrecorded.
 
-**Built:** Settings → **Use this phone as crib** / **Watch the crib**. The crib phone shows a 6-digit passkey and keeps the camera **off** until someone opens Watch. Both parents can type that passkey and watch at the same time. Hashes `#/crib` and `#/watch` keep the crib phone on that screen after a reload. This does not use the event-sync Wi-Fi link.
+**Built:** Settings shows a **stable crib passkey**. The crib phone uses that same code every time. Parent phones remember it after you save it or after a This Wi-Fi catch-up, so Watch from another floor is one tap. Camera stays off until someone watches. Hashes `#/crib` and `#/watch`.
 
 ## What you are asking for
 
@@ -75,9 +75,19 @@ Dedicated baby cameras exist mainly for **IR night vision**. A phone in a dark n
 
 With only the two parent phones, the crib role occupies one of them. The setup that works is an **old unused phone** on the crib, plugged in, this screen left on. Both parents keep their own phones as watchers.
 
-### 4. Both parents can watch
+Same home Wi-Fi is enough from another floor. You do not need a new camera or a cloud relay. Guest Wi-Fi with client isolation, or a mesh that splits bands into isolated networks, will fail the same way event sync already fails.
 
-The crib phone is a small room, not the 1:1 event-sync link. It shows a passkey. Each parent types it. The crib fans the live picture out to everyone currently watching (up to four). When the last watcher leaves, the camera turns off.
+### 4. How you know the passkey without walking upstairs
+
+The code is not a new random number each nap. It is saved on the phone:
+
+1. Open Settings. The crib passkey appears and stays.
+2. Copy it onto the other parent phone (type it, or link **This Wi-Fi** once — that copies the crib code with the care log).
+3. Use that same code in Settings on the spare crib phone.
+4. Leave the crib phone upstairs on **Use this phone as crib**.
+5. Downstairs, tap **Watch the crib**. This phone already has the code.
+
+After the first save, you never need to read the crib screen to connect. Both parents can watch at the same time.
 
 ### 5. Audio is more sensitive than video
 
@@ -121,7 +131,7 @@ Same origin, same installed PWA, same family passkey. Two buttons in Settings, n
 
 ## Definition of done for a first try
 
-- Crib phone in standby, camera off, both parents can open Watch with the crib passkey.
+- Crib phone in standby with a stable passkey; parent phones remember it so Watch from another floor is one tap.
 - Picture appears within a few seconds of the first Watch join; camera stops when the last watcher leaves.
 - Locking the crib phone prevents a new Watch join until you unlock it (honest, not silently frozen).
 - No video bytes in IndexedDB, network logs, or the mailbox.

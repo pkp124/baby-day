@@ -10,6 +10,7 @@ import { db } from "../lib/db";
 import { buildReport, reportFileStem } from "../lib/report";
 import { reportHtml } from "../lib/reportHtml";
 import { downloadFile, printHtml } from "../lib/download";
+import { formatPasskey, isValidPasskey, normalizePasskey } from "../lib/pairCode";
 
 export function SettingsPage({
   settings,
@@ -32,6 +33,7 @@ export function SettingsPage({
   const [join, setJoin] = useState("");
   const [message, setMessage] = useState("");
   const [email, setEmail] = useState("");
+  const cribCode = normalizePasskey(settings.cribPasskey);
 
   async function copySummary() {
     const events = await db.events.toArray();
@@ -179,9 +181,42 @@ export function SettingsPage({
       <section className="card quiet">
         <h2>Crib camera</h2>
         <p className="muted">
-          Put a spare phone on the crib and leave that screen on. The camera stays off until a parent taps Watch.
-          Both parents can watch at once. The picture stays on this Wi-Fi and is never recorded. Plug the crib phone
-          in and set Auto-Lock to Never. A dark room needs a night light.
+          Same home Wi-Fi reaches another floor. Save this passkey on each parent phone once. After that, Watch is one
+          tap — you do not walk upstairs to read the crib screen. The camera stays off until someone watches. Plug the
+          crib phone in and set Auto-Lock to Never.
+        </p>
+        {isValidPasskey(cribCode) ? (
+          <button
+            className="passkey-code"
+            type="button"
+            onClick={() => {
+              void navigator.clipboard.writeText(cribCode);
+              setMessage("Crib passkey copied");
+            }}
+            aria-label="Copy crib passkey"
+          >
+            {formatPasskey(cribCode)}
+          </button>
+        ) : null}
+        <label className="field">
+          Crib passkey on this phone
+          <input
+            className="passkey-input"
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            autoCorrect="off"
+            autoCapitalize="off"
+            spellCheck={false}
+            pattern="[0-9]*"
+            maxLength={7}
+            value={formatPasskey(settings.cribPasskey)}
+            onChange={(e) => void saveSettings({ cribPasskey: normalizePasskey(e.target.value) })}
+            placeholder="from the crib phone"
+            aria-label="Crib passkey"
+          />
+        </label>
+        <p className="faint">
+          Use the same six digits on the crib phone and both parent phones. Linking This Wi-Fi also copies it.
         </p>
         <div className="stack">
           <button className="primary" type="button" onClick={onCrib}>

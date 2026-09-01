@@ -5,7 +5,7 @@ import { digestOf, eventsNeeded, hostOnlySdp, shouldApplyIncoming } from "./lanM
 import { localHostSdp, newLanPeer } from "./lanRtc";
 import { generatePasskey, isValidPasskey, normalizePasskey } from "./pairCode";
 import { openPairMailbox, type PairMailbox, type PairWire } from "./pairMailbox";
-import type { CareEvent } from "./types";
+import type { CareEvent, Settings } from "./types";
 
 export type LanPhase = "idle" | "host-offer" | "guest-wait" | "guest-answer" | "connected" | "error";
 export type PairingMode = "off" | "passkey" | "qr";
@@ -79,6 +79,7 @@ type HelloMsg = {
   familyId: string;
   babyId: string;
   babyName: string;
+  cribPasskey?: string;
 };
 type DigestMsg = { kind: "digest"; items: ReturnType<typeof digestOf> };
 type EventsMsg = { kind: "events"; events: CareEvent[] };
@@ -133,6 +134,9 @@ async function onWire(msg: Wire) {
   switch (msg.kind) {
     case "hello": {
       emit({ partnerName: msg.name });
+      const patch: Partial<Settings> = {};
+      const theirs = normalizePasskey(msg.cribPasskey ?? "");
+      const mine = normalizePasskey(settings.cribPasskey);
       if (role === "guest") {
         const events = await db.events.toArray();
         for (const event of events) {
@@ -140,12 +144,14 @@ async function onWire(msg: Wire) {
             await db.events.put({ ...event, familyId: msg.familyId, babyId: msg.babyId });
           }
         }
-        await saveSettings({
-          familyId: msg.familyId,
-          babyId: msg.babyId,
-          babyName: msg.babyName || settings.babyName,
-        });
+        patch.familyId = msg.familyId;
+        patch.babyId = msg.babyId;
+        patch.babyName = msg.babyName || settings.babyName;
+        if (isValidPasskey(theirs)) patch.cribPasskey = theirs;
+      } else if (isValidPasskey(theirs) && !isValidPasskey(mine)) {
+        patch.cribPasskey = theirs;
       }
+      if (Object.keys(patch).length) await saveSettings(patch);
       send({ kind: "digest", items: digestOf(await db.events.toArray()) });
       return;
     }
@@ -187,6 +193,7 @@ async function hello() {
     familyId: settings.familyId,
     babyId: settings.babyId,
     babyName: settings.babyName,
+    cribPasskey: isValidPasskey(normalizePasskey(settings.cribPasskey)) ? normalizePasskey(settings.cribPasskey) : undefined,
   });
 }
 
