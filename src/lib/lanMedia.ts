@@ -1,7 +1,7 @@
 import { useSyncExternalStore } from "react";
 import { getSettings, saveSettings } from "./db";
-import { hostOnlySdp } from "./lanMerge";
-import { localHostSdp, newLanPeer } from "./lanRtc";
+import { lanMediaSdp } from "./lanMerge";
+import { localMediaSdp, newMediaPeer } from "./lanRtc";
 import { generatePasskey, isValidPasskey, normalizePasskey, topicForCribPasskey } from "./pairCode";
 import { openPairMailbox, type PairMailbox, type PairWire } from "./pairMailbox";
 
@@ -139,7 +139,7 @@ async function cribName() {
 
 function enqueue(job: () => Promise<void>) {
   offerQueue = offerQueue.then(job).catch((err) => {
-    console.error(err);
+    emit({ error: mediaError(err, "Could not start the picture") });
   });
   return offerQueue;
 }
@@ -222,32 +222,36 @@ async function offerTo(id: string) {
   }
   if (!stream) return;
   closePeer(session);
-  const pc = newLanPeer();
-  session.pc = pc;
-  pc.onconnectionstatechange = () => {
-    if (session.pc !== pc) return;
-    if (pc.connectionState === "connected") {
-      session.live = true;
-      emitWatchers({ phase: "live", error: "" });
-      return;
-    }
-    if (pc.connectionState === "failed") {
-      session.live = false;
-      emitWatchers({ error: "Picture dropped. Trying again…" });
-      window.setTimeout(() => {
-        if (state.role === "crib" && sessions.has(id)) enqueue(() => offerTo(id));
-      }, 2000);
-    }
-  };
-  for (const track of stream.getTracks()) pc.addTrack(track, stream);
-  const offer = await pc.createOffer();
-  await pc.setLocalDescription(offer);
-  await mailbox.publish({
-    k: "offer",
-    to: id,
-    signal: await localHostSdp(pc),
-    name: await cribName(),
-  });
+  try {
+    const pc = newMediaPeer();
+    session.pc = pc;
+    pc.onconnectionstatechange = () => {
+      if (session.pc !== pc) return;
+      if (pc.connectionState === "connected") {
+        session.live = true;
+        emitWatchers({ phase: "live", error: "" });
+        return;
+      }
+      if (pc.connectionState === "failed") {
+        session.live = false;
+        emitWatchers({ error: "Picture dropped. Trying again…" });
+        window.setTimeout(() => {
+          if (state.role === "crib" && sessions.has(id)) enqueue(() => offerTo(id));
+        }, 2000);
+      }
+    };
+    for (const track of stream.getTracks()) pc.addTrack(track, stream);
+    const offer = await pc.createOffer();
+    await pc.setLocalDescription(offer);
+    await mailbox.publish({
+      k: "offer",
+      to: id,
+      signal: await localMediaSdp(pc),
+      name: await cribName(),
+    });
+  } catch (err) {
+    emitWatchers({ error: mediaError(err, "Could not send the picture to a watcher") });
+  }
 }
 
 function reofferAll() {
@@ -286,7 +290,11 @@ async function onCribWire(msg: PairWire) {
       {
         const session = sessions.get(msg.from);
         if (!session?.pc || !msg.signal) return;
-        await session.pc.setRemoteDescription({ type: "answer", sdp: hostOnlySdp(msg.signal) });
+        try {
+          await session.pc.setRemoteDescription({ type: "answer", sdp: lanMediaSdp(msg.signal) });
+        } catch (err) {
+          emitWatchers({ error: mediaError(err, "Could not finish the picture handshake") });
+        }
       }
       return;
     case "bye":
@@ -304,7 +312,7 @@ async function onCribWire(msg: PairWire) {
 async function answerOffer(msg: PairWire) {
   if (state.role !== "watch" || !mailbox || !msg.signal) return;
   if (msg.to && msg.to !== mailbox.from) return;
-  const pc = newLanPeer();
+  const pc = newMediaPeer();
   const existing = sessions.get("crib");
   if (existing) closePeer(existing);
   const session: Session = { id: "crib", name: msg.name || "Crib", live: false, pc };
@@ -325,10 +333,16 @@ async function answerOffer(msg: PairWire) {
       emit({ phase: "waiting", error: "Picture dropped. Waiting for the crib phone…" });
     }
   };
-  await pc.setRemoteDescription({ type: "offer", sdp: hostOnlySdp(msg.signal) });
-  const answer = await pc.createAnswer();
-  await pc.setLocalDescription(answer);
-  await mailbox.publish({ k: "answer", to: msg.from, signal: await localHostSdp(pc), name: await cribName() });
+  try {
+    await pc.setRemoteDescription({ type: "offer", sdp: lanMediaSdp(msg.signal) });
+    const answer = await pc.createAnswer();
+    await pc.setLocalDescription(answer);
+    await mailbox.publish({ k: "answer", to: msg.from, signal: await localMediaSdp(pc), name: await cribName() });
+  } catch (err) {
+    closePeer(session);
+    sessions.delete("crib");
+    emit({ error: mediaError(err, "Could not start the picture") });
+  }
 }
 
 async function onWatchWire(msg: PairWire) {
@@ -383,7 +397,13 @@ export async function startCrib(opts?: { facing?: CameraFacing; mic?: boolean })
     } catch (err) {
       emit({ error: mediaError(err, "Could not open the camera") });
     }
-    mailbox = await openPairMailbox(passkey, (msg) => void onCribWire(msg), (err) => emit({ phase: "error", error: err.message }), {
+    mailbox = await openPairMailbox(
+      passkey,
+      (msg) => {
+        void onCribWire(msg).catch((err) => emit({ error: mediaError(err, "Crib handshake failed") }));
+      },
+      (err) => emit({ phase: "error", error: err.message }),
+      {
       topic: topicForCribPasskey(passkey),
       reconnect: true,
     });
@@ -429,7 +449,13 @@ export async function startWatch(passkey: string) {
     watchers: [],
   });
   try {
-    mailbox = await openPairMailbox(code, (msg) => void onWatchWire(msg), (err) => emit({ phase: "error", error: err.message }), {
+    mailbox = await openPairMailbox(
+      code,
+      (msg) => {
+        void onWatchWire(msg).catch((err) => emit({ error: mediaError(err, "Could not start the picture") }));
+      },
+      (err) => emit({ phase: "error", error: err.message }),
+      {
       topic: topicForCribPasskey(code),
       reconnect: true,
     });

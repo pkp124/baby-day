@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from "react";
 import { toDataURL } from "qrcode";
 import { db, getSettings, onEventCommit, putEvent, saveSettings } from "./db";
+import { gunzipBd1, gzipToBd1 } from "./gzip";
 import { digestOf, eventsNeeded, hostOnlySdp, shouldApplyIncoming } from "./lanMerge";
 import { localHostSdp, newLanPeer } from "./lanRtc";
 import { generatePasskey, isValidPasskey, normalizePasskey } from "./pairCode";
@@ -86,34 +87,12 @@ type EventsMsg = { kind: "events"; events: CareEvent[] };
 type EventMsg = { kind: "event"; event: CareEvent };
 type Wire = HelloMsg | DigestMsg | EventsMsg | EventMsg;
 
-function b64url(bytes: Uint8Array) {
-  let bin = "";
-  bytes.forEach((b) => {
-    bin += String.fromCharCode(b);
-  });
-  return btoa(bin).replaceAll("+", "-").replaceAll("/", "_").replaceAll("=", "");
-}
-
-function unb64url(text: string) {
-  const pad = text + "===".slice((text.length + 3) % 4);
-  const bin = atob(pad.replaceAll("-", "+").replaceAll("_", "/"));
-  return Uint8Array.from(bin, (c) => c.charCodeAt(0));
-}
-
 export async function encodeSignal(payload: unknown) {
-  const json = new TextEncoder().encode(JSON.stringify(payload));
-  const gzip = new Blob([json]).stream().pipeThrough(new CompressionStream("gzip"));
-  const buf = new Uint8Array(await new Response(gzip).arrayBuffer());
-  return `BD1.${b64url(buf)}`;
+  return gzipToBd1(JSON.stringify(payload));
 }
 
 export async function decodeSignal(text: string) {
-  const raw = text.trim();
-  const body = raw.startsWith("BD1.") ? raw.slice(4) : raw;
-  const bytes = unb64url(body);
-  const unzip = new Blob([bytes]).stream().pipeThrough(new DecompressionStream("gzip"));
-  const json = await new Response(unzip).text();
-  return JSON.parse(json) as { t: "offer" | "answer"; sdp: string; name: string };
+  return JSON.parse(await gunzipBd1(text)) as { t: "offer" | "answer"; sdp: string; name: string };
 }
 
 async function toQr(text: string) {
