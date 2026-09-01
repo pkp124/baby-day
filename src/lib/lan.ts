@@ -2,15 +2,6 @@ import { useSyncExternalStore } from "react";
 import { toDataURL } from "qrcode";
 import { db, getSettings, onEventCommit, putEvent, saveSettings } from "./db";
 import { digestOf, eventsNeeded, hostOnlySdp, shouldApplyIncoming } from "./lanMerge";
-import {
-  attachLanLinked,
-  attachMediaSend,
-  handleMediaWire,
-  mediaChannelClosed,
-  mediaChannelOpen,
-  parseMediaWire,
-  type MediaWire,
-} from "./lanMedia";
 import { localHostSdp, newLanPeer } from "./lanRtc";
 import { generatePasskey, isValidPasskey, normalizePasskey } from "./pairCode";
 import { openPairMailbox, type PairMailbox, type PairWire } from "./pairMailbox";
@@ -92,7 +83,7 @@ type HelloMsg = {
 type DigestMsg = { kind: "digest"; items: ReturnType<typeof digestOf> };
 type EventsMsg = { kind: "events"; events: CareEvent[] };
 type EventMsg = { kind: "event"; event: CareEvent };
-type Wire = HelloMsg | DigestMsg | EventsMsg | EventMsg | MediaWire;
+type Wire = HelloMsg | DigestMsg | EventsMsg | EventMsg;
 
 function b64url(bytes: Uint8Array) {
   let bin = "";
@@ -137,22 +128,9 @@ function send(msg: Wire) {
   if (channel?.readyState === "open") channel.send(JSON.stringify(msg));
 }
 
-attachMediaSend((msg) => {
-  if (channel?.readyState !== "open") return false;
-  channel.send(JSON.stringify(msg));
-  return true;
-});
-attachLanLinked(() => state.phase === "connected");
-
 async function onWire(msg: Wire) {
   const settings = await getSettings();
   switch (msg.kind) {
-    case "media-ready":
-    case "media-offer":
-    case "media-answer":
-    case "media-bye":
-      await handleMediaWire(msg);
-      return;
     case "hello": {
       emit({ partnerName: msg.name });
       if (role === "guest") {
@@ -220,21 +198,13 @@ function bindChannel(next: RTCDataChannel) {
     closeMailbox();
     emit({ phase: "connected", error: "", lastSyncAt: new Date().toISOString() });
     void hello();
-    mediaChannelOpen();
   };
   next.onclose = () => {
-    mediaChannelClosed();
     if (state.phase === "connected") emit({ phase: "idle", pairing: "off", passkey: "", error: "" });
   };
   next.onmessage = (ev) => {
     try {
-      const parsed: unknown = JSON.parse(String(ev.data));
-      const media = parseMediaWire(parsed);
-      if (media) {
-        void handleMediaWire(media);
-        return;
-      }
-      void onWire(parsed as Wire);
+      void onWire(JSON.parse(String(ev.data)) as Wire);
     } catch (err) {
       console.error(err);
     }
@@ -299,7 +269,6 @@ function pairError(err: unknown) {
 export function disconnectLan() {
   clearPairTimer();
   closeMailbox();
-  mediaChannelClosed();
   teardownPeer();
   guestBusy = false;
   const partner = state.partnerName;

@@ -26,3 +26,7 @@ export function formatPasskey(code: string) {
 export function topicForPasskey(code: string) {
   return `bdpair${normalizePasskey(code)}`;
 }
+
+export function topicForCribPasskey(code: string) {
+  return `bdcrib${normalizePasskey(code)}`;
+}

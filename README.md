@@ -62,7 +62,7 @@ The care day starts at 5:00 local (configurable), not midnight. Units are ml/oz,
 3. **Sleep** opens a sheet: start now, or save a nap with started and woke times. If a sleep timer is already running, the home button ends it.
 4. **Pump**, **Diaper**, **Temp**, **Weight**, and **Note** are one sheet each. **Vitamin D** and **Vitamin K** are the red/green cards: tap red to log now, tap green to edit.
 5. Tap a timeline row to edit time, breast minutes, notes, or delete (with undo).
-6. Settings: units, care-day start hour, 48-hour copy for the pediatrician, JSON/CSV backup. **This Wi-Fi** links the other parent’s phone on the home network with a 6-digit passkey — events stay on the two phones. QR codes remain as a fallback. **Crib camera** uses that same link: one phone on the crib, the other watches. Live picture only, on this Wi-Fi, nothing recorded.
+6. Settings: units, care-day start hour, 48-hour copy for the pediatrician, JSON/CSV backup. **This Wi-Fi** links the other parent’s phone on the home network with a 6-digit passkey — events stay on the two phones. QR codes remain as a fallback. **Crib camera:** leave a spare phone on the crib with that screen on. The camera stays off until a parent opens Watch and types the crib passkey. Both parents can watch at once. Live picture only, on this Wi-Fi, nothing recorded.
 7. iOS: Share → Add to Home Screen. Android: Install app.
 
 Names stay on the phone so the timeline can say who logged what.

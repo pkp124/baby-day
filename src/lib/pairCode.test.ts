@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatPasskey, generatePasskey, isValidPasskey, normalizePasskey, topicForPasskey } from "./pairCode";
+import { formatPasskey, generatePasskey, isValidPasskey, normalizePasskey, topicForCribPasskey, topicForPasskey } from "./pairCode";
 
 describe("passkeys", () => {
   it("normalizes spaces, dashes, and extra characters", () => {
@@ -23,6 +23,7 @@ describe("passkeys", () => {
 
   it("maps a passkey to a mailbox topic", () => {
     expect(topicForPasskey("482 107")).toBe("bdpair482107");
+    expect(topicForCribPasskey("482 107")).toBe("bdcrib482107");
   });
 
   it("generates six-digit codes that are not trivially weak", () => {

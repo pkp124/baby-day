@@ -6,7 +6,7 @@ Assessment of a crib-phone → parent-phone video link, without buying a camera,
 
 This is a **live window**, not a camera product and not part of the care log. It is optional, LAN-only, and unrecorded.
 
-**Built:** Settings → **Use this phone as crib** / **Watch the crib**. Requires the existing **This Wi-Fi** link. Hashes `#/crib` and `#/watch` keep the crib phone on that screen after a reload.
+**Built:** Settings → **Use this phone as crib** / **Watch the crib**. The crib phone shows a 6-digit passkey and keeps the camera **off** until someone opens Watch. Both parents can type that passkey and watch at the same time. Hashes `#/crib` and `#/watch` keep the crib phone on that screen after a reload. This does not use the event-sync Wi-Fi link.
 
 ## What you are asking for
 
@@ -59,21 +59,25 @@ Do **not** write video into IndexedDB, git, or Supabase. Do **not** add STUN/TUR
 
 ## Constraints you have to accept (this is the real product)
 
-### 1. The crib phone must stay awake and plugged in
+### 1. The crib phone must stay awake enough to hear a watch request
 
-The stream dies when iOS suspends the PWA, when Android kills the tab, or when the screen locks. Wake Lock helps; it does not survive a lock or a swipe-away. Treat the crib phone as a plugged-in appliance with the app in the foreground. That is how native baby-monitor apps work too.
+The camera and encoder stay off until a parent opens Watch. That is the power win.
+
+The crib PWA still has to be running to receive that request. If iOS suspends it (lock, swipe away), nobody can start the picture until you unlock the crib phone. Wake Lock plus Auto-Lock → Never plus plugged in is the practical setup. Unlocking resumes: if someone is waiting, the camera starts then.
+
+A native Android foreground service could film with the screen off. iOS will not, even in a native baby-monitor app, without keeping the screen on. Do not buy a native wrapper for lock-survival on iPhone.
 
 ### 2. A phone is a terrible night camera
 
 Dedicated baby cameras exist mainly for **IR night vision**. A phone in a dark nursery shows black. A dim night light in the room is the workaround. Do not leave the torch on the baby’s face. If night-dark video is the actual need, a phone will not replace a camera.
 
-### 3. Two phones means one of you has no phone
+### 3. Use a spare phone as the crib
 
-With the two phones you already pair for handover, the crib role occupies one of them. The setup that actually works is an **old unused phone** on the crib, still on the home Wi-Fi, still linked. Then both parents keep their own phones as watchers.
+With only the two parent phones, the crib role occupies one of them. The setup that works is an **old unused phone** on the crib, plugged in, this screen left on. Both parents keep their own phones as watchers.
 
-### 4. Today’s pairing is 1:1
+### 4. Both parents can watch
 
-**This Wi-Fi** links two peers. Crib + one watcher fits. Crib + two parents watching at once is a mesh or an SFU. Do not build that until one watcher works. A spare crib phone plus “whoever is home opens Watch” is enough for a family of two.
+The crib phone is a small room, not the 1:1 event-sync link. It shows a passkey. Each parent types it. The crib fans the live picture out to everyone currently watching (up to four). When the last watcher leaves, the camera turns off.
 
 ### 5. Audio is more sensitive than video
 
@@ -93,12 +97,14 @@ The host of GitHub Pages never sees frames. The mailbox never sees frames. If bo
 ## Recommended shape if we build it
 
 ```text
-Crib phone (foreground, plugged in)
-  getUserMedia (camera, mic optional)
-        │  WebRTC media, host-only ICE
+Crib phone (screen on, camera off)
+  waits for a Watch passkey join
+        │  on first watcher: open camera
+        │  WebRTC media, host-only ICE, one stream per watcher
         ▼
-Watch phone (this PWA, Watch mode)
+Parent phones (Watch)
   <video>  — live only, nothing persisted
+  last watcher leaving turns the crib camera off
 ```
 
 Same origin, same installed PWA, same family passkey. Two buttons in Settings, next to **This Wi-Fi**: **Use this phone as crib** / **Watch the crib**. The home screen stays a logging dashboard.
@@ -115,9 +121,9 @@ Same origin, same installed PWA, same family passkey. Two buttons in Settings, n
 
 ## Definition of done for a first try
 
-- One phone in crib mode, one in watch mode, same Wi-Fi, already linked.
-- Picture appears within a few seconds of tapping Watch.
-- Locking the crib phone stops the picture (honest, not silently frozen).
+- Crib phone in standby, camera off, both parents can open Watch with the crib passkey.
+- Picture appears within a few seconds of the first Watch join; camera stops when the last watcher leaves.
+- Locking the crib phone prevents a new Watch join until you unlock it (honest, not silently frozen).
 - No video bytes in IndexedDB, network logs, or the mailbox.
 - Home logging still works if you never open crib/watch.
 

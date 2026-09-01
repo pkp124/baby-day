@@ -1,11 +1,12 @@
 import { topicForPasskey } from "./pairCode";
 
-export type PairKind = "hello" | "offer" | "answer";
+export type PairKind = "hello" | "offer" | "answer" | "bye";
 
 export type PairWire = {
   v: 1;
   from: string;
   k: PairKind;
+  to?: string;
   signal?: string;
   name?: string;
 };
@@ -29,8 +30,9 @@ export function parsePairMessage(raw: string): PairWire | null {
   try {
     const msg = JSON.parse(raw) as PairWire;
     if (msg?.v !== 1) return null;
-    if (msg.k !== "hello" && msg.k !== "offer" && msg.k !== "answer") return null;
+    if (msg.k !== "hello" && msg.k !== "offer" && msg.k !== "answer" && msg.k !== "bye") return null;
     if (typeof msg.from !== "string" || !msg.from) return null;
+    if (msg.to !== undefined && (typeof msg.to !== "string" || !msg.to)) return null;
     if ((msg.k === "offer" || msg.k === "answer") && typeof msg.signal !== "string") return null;
     return msg;
   } catch {
@@ -83,23 +85,33 @@ export async function openPairMailbox(
   passkey: string,
   onMessage: (msg: PairWire) => void,
   onError: (err: Error) => void,
+  opts?: { topic?: string; reconnect?: boolean },
 ): Promise<PairMailbox> {
   const from = randomFrom();
   const base = mailboxBaseUrl();
-  const topic = topicForPasskey(passkey);
-  const es = new EventSource(`${base}/${topic}/sse`);
+  const topic = opts?.topic ?? topicForPasskey(passkey);
+  let es = new EventSource(`${base}/${topic}/sse`);
   let closed = false;
 
-  es.onmessage = (ev) => {
-    const msg = parseMailboxSseData(String(ev.data));
-    if (!msg || msg.from === from) return;
-    onMessage(msg);
-  };
-  es.onerror = () => {
-    if (closed || es.readyState !== EventSource.CLOSED) return;
-    onError(new Error("Lost the passkey service. Try again, or use a QR code."));
+  const bind = (source: EventSource) => {
+    source.onmessage = (ev) => {
+      const msg = parseMailboxSseData(String(ev.data));
+      if (!msg || msg.from === from) return;
+      onMessage(msg);
+    };
+    source.onerror = () => {
+      if (closed || source.readyState !== EventSource.CLOSED) return;
+      if (opts?.reconnect) {
+        source.close();
+        es = new EventSource(`${base}/${topic}/sse`);
+        bind(es);
+        return;
+      }
+      onError(new Error("Lost the passkey service. Try again, or use a QR code."));
+    };
   };
 
+  bind(es);
   await waitOpen(es);
 
   return {

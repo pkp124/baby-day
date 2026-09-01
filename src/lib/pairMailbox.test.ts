@@ -6,9 +6,11 @@ describe("passkey mailbox messages", () => {
     const hello: PairWire = { v: 1, from: "aa", k: "hello" };
     const offer: PairWire = { v: 1, from: "aa", k: "offer", signal: "BD1.abc", name: "Asha" };
     const answer: PairWire = { v: 1, from: "bb", k: "answer", signal: "BD1.def", name: "Ravi" };
+    const bye: PairWire = { v: 1, from: "bb", k: "bye" };
     expect(parsePairMessage(serializePairMessage(hello))).toEqual(hello);
     expect(parsePairMessage(serializePairMessage(offer))).toEqual(offer);
     expect(parsePairMessage(serializePairMessage(answer))).toEqual(answer);
+    expect(parsePairMessage(serializePairMessage(bye))).toEqual(bye);
   });
 
   it("rejects malformed payloads", () => {
