@@ -89,6 +89,7 @@ export type Settings = {
   lastVisitAt: string;
   handoverCursor: string;
   onboardedAt: string;
+  cribPasskey: string;
 };
 
 export const defaultSettings = (): Settings => ({
@@ -106,4 +107,5 @@ export const defaultSettings = (): Settings => ({
   lastVisitAt: "",
   handoverCursor: "",
   onboardedAt: "",
+  cribPasskey: "",
 });

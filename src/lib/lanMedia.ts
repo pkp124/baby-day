@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from "react";
-import { getSettings } from "./db";
+import { getSettings, saveSettings } from "./db";
 import { hostOnlySdp } from "./lanMerge";
 import { localHostSdp, newLanPeer } from "./lanRtc";
 import { generatePasskey, isValidPasskey, normalizePasskey, topicForCribPasskey } from "./pairCode";
@@ -92,6 +92,21 @@ function getMediaSnapshot() {
 
 export function cameraShouldRun(watcherCount: number) {
   return watcherCount > 0;
+}
+
+export async function ensureCribPasskey() {
+  const settings = await getSettings();
+  const existing = normalizePasskey(settings.cribPasskey);
+  if (isValidPasskey(existing)) return existing;
+  const passkey = generatePasskey();
+  await saveSettings({ cribPasskey: passkey });
+  return passkey;
+}
+
+export async function rememberCribPasskey(code: string) {
+  const passkey = normalizePasskey(code);
+  if (!isValidPasskey(passkey)) return;
+  await saveSettings({ cribPasskey: passkey });
 }
 
 function stopStream(stream: MediaStream | null) {
@@ -353,7 +368,7 @@ export async function startCrib(opts?: { facing?: CameraFacing; mic?: boolean })
   }
   if (starting) return;
   starting = true;
-  const passkey = generatePasskey();
+  const passkey = await ensureCribPasskey();
   emit({
     role: "crib",
     phase: "starting",
@@ -420,6 +435,7 @@ export async function startWatch(passkey: string) {
     });
     const settings = await getSettings();
     await mailbox.publish({ k: "hello", name: settings.caregiverName || "Parent" });
+    await rememberCribPasskey(code);
     emit({ phase: "waiting", error: "" });
   } catch (err) {
     closeMailbox();
