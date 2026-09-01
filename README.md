@@ -4,7 +4,7 @@ A night-first PWA for two parents. Log a care event in a few taps. The other par
 
 It is a shared handover layer, not a medical or coaching product. No account is required.
 
-The app is **local-first**. Care events stay on the phone unless you turn on sharing. See [privacy.md](docs/privacy.md).
+Keep it **simple, usable, reliable, and privacy-first**. Care events stay on the phone unless you turn on sharing. See [privacy.md](docs/privacy.md).
 
 ## Screenshots
 
@@ -104,6 +104,7 @@ A custom domain is nicer for PWA install than `username.github.io/baby-day/`. Th
 
 - [Privacy](docs/privacy.md) — what stays on the phone, and what sharing actually does
 - [Current product plan](docs/product-plan.md)
+- [Productization catalog](docs/productization-catalog.md) — ranked ideas for later; the bar is simple, usable, reliable, privacy-first
 - [Hosting and backend](docs/hosting-and-backend.md)
 - [Original idea](docs/idea-and-plan.md)
 - [Plan review](docs/plan-review.md)

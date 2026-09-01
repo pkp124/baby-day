@@ -1,12 +1,25 @@
 # Baby Day — current product plan
 
-Living plan for the app in this repo. The original write-up is in [idea-and-plan.md](./idea-and-plan.md). Reviews: [plan-review.md](./plan-review.md), [hosting-and-backend.md](./hosting-and-backend.md), [privacy.md](./privacy.md).
+Living plan for the app in this repo. The original write-up is in [idea-and-plan.md](./idea-and-plan.md). Reviews: [plan-review.md](./plan-review.md), [hosting-and-backend.md](./hosting-and-backend.md), [privacy.md](./privacy.md). Ranked later ideas, gated by the bar below: [productization-catalog.md](./productization-catalog.md).
 
 ## What it is
 
 A night-first PWA for two parents. Either parent logs a care event in a few taps. The other parent can see it. The home screen answers “what happened?” and “what needs attention?”
 
 It is a shared handover layer, not a medical or coaching product.
+
+## The bar (locked)
+
+Keep this app **simple, usable, reliable, and privacy-first**. That is how we say no. It is not a slogan for a later version.
+
+| Word | Means at 3am |
+| --- | --- |
+| **Simple** | Home still answers two questions: what happened, and what needs attention. No second product (coach, monitor, shop, translator). A new control has to earn the slot. |
+| **Usable** | One-handed, night-first, a few taps. Optional fields never block logging. |
+| **Reliable** | The log does not lie and does not vanish. Timers, totals, backups, and sync status stay honest. |
+| **Privacy first** | On this phone by default. Sharing is a choice. Care events and audio do not go to a host in the clear. |
+
+New work has to pass all four. A high score in the [catalog](./productization-catalog.md) is not permission to add surface area.
 
 ## Locked decisions
 
@@ -20,7 +33,7 @@ It is a shared handover layer, not a medical or coaching product.
 - **Care day** starts at 05:00 local (configurable), not midnight.
 - **Canonical units** in storage: millilitres, grams, seconds. Display ml/oz and kg/lb from settings.
 - **Auth**: Google if configured, magic link as backup. Do not auto-create a cloud family on login — the first parent taps “Start a shared family”, the second joins with a single-use invite.
-- **No charts, reminders, cry analysis, or medical advice in v1.** Time-since-last, daily totals, handover, and a 48-hour text snapshot are the dashboard.
+- **No charts, reminders, cry analysis, or medical advice in v1.** Time-since-last, daily totals, handover, and a 48-hour text snapshot are the dashboard. Voice logging and on-device cry bouts stay out of v1; they are catalog rows, not the next build.
 
 ## MVP in this codebase
 
@@ -36,9 +49,11 @@ It is a shared handover layer, not a medical or coaching product.
 - Local Wi-Fi handover via 6-digit passkey (QR fallback) + WebRTC (host-only ICE)
 - Installable PWA, dark UI
 
-## Out of scope until you have used it for a week
+## Out of scope until nightly use is boring
 
-Charts, notifications, appointments, milk inventory, custom event builder, multiple babies, guest/nurse roles.
+Charts, notifications, appointments, milk inventory, custom event builder, multiple babies, guest/nurse roles, in-app voice, cry audio.
+
+The [productization catalog](./productization-catalog.md) is a menu, not a roadmap. Until this family has used the current app at night, do not start product rows below the bar. Work that *can* pass the bar first: usability of the current screens (undo on save, thumb-zone actions, last night, choices before the clock), then make the log harder to lose, a copy-paste briefing, then a shift baton or encrypted mailbox if two phones need async handover.
 
 ## Sharing between two phones
 
