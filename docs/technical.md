@@ -1,6 +1,11 @@
 # Baby Day technical notes
 
-For someone installing, hosting, or changing the app. Parents who only want to log a feed should read [user-guide.md](./user-guide.md). In the app: `#/tech`. On the GitHub Pages site: `tech/`.
+For someone installing, hosting, or changing the app. Parents who only want to log a feed should read the [user guide](https://pkp124.github.io/baby-day/guide/).
+
+- **App:** [pkp124.github.io/baby-day](https://pkp124.github.io/baby-day/)
+- **This page (hosted):** [pkp124.github.io/baby-day/tech](https://pkp124.github.io/baby-day/tech/)
+- **In the app:** Settings → Technical notes, or [open `#/tech`](https://pkp124.github.io/baby-day/#/tech)
+- **Repo:** [github.com/pkp124/baby-day](https://github.com/pkp124/baby-day)
 
 ## Stack
 

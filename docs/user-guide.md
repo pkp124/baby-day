@@ -1,6 +1,10 @@
 # Baby Day user guide
 
-How to use the app as a new parent. Technical internals are in [technical.md](./technical.md). In the installed app these pages live at `#/guide` and `#/tech`. On the GitHub Pages site they are also at `guide/` and `tech/`.
+How to use the app as a new parent. Technical internals are in [technical.md](./technical.md).
+
+- **App:** [pkp124.github.io/baby-day](https://pkp124.github.io/baby-day/)
+- **This guide (hosted):** [pkp124.github.io/baby-day/guide](https://pkp124.github.io/baby-day/guide/)
+- **In the app:** Settings → User guide, or [open `#/guide`](https://pkp124.github.io/baby-day/#/guide)
 
 Baby Day is a night-first log for two parents. Either of you records a feed, sleep, diaper, or note in a few taps. The home screen answers “what happened?” and “what needs attention?” It is a handover layer, not a medical app, and it does not need an account.
 
