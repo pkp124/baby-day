@@ -291,6 +291,7 @@ export async function startLanHostPasskey(existing?: string) {
     error: "",
     partnerName: "",
   });
+  void persistRememberedLan(passkey, "host");
   armPairTimeout();
   try {
     mailbox = await openPairMailbox(passkey, onHostPair, (err) => pairError(err));
@@ -397,6 +398,7 @@ export async function joinLanPasskey(raw: string) {
     error: "",
     partnerName: "",
   });
+  void persistRememberedLan(passkey, "guest");
   armPairTimeout();
   try {
     mailbox = await openPairMailbox(passkey, onGuestPair, (err) => pairError(err));
