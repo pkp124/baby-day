@@ -110,7 +110,7 @@ export function CribWatchPage({
             </p>
           ) : null}
           {mode === "crib" && media.phase === "waiting" && media.watchers.length === 0 ? (
-            <p className="muted">Camera is off until someone downstairs opens Watch. This code stays the same — save it in Settings on your phone so you do not need to walk upstairs.</p>
+            <p className="muted">Camera is off until someone downstairs opens Watch. This code stays the same — save it on the Camera tab so you do not need to walk upstairs.</p>
           ) : null}
         </div>
         <div className="stack">

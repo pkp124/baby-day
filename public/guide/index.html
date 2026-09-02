@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#1c1712" />
+    <title>Baby Day user guide</title>
+    <link rel="icon" href="../favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Fraunces:opsz,wght@9..144,520;9..144,640&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../docs.css" />
+  </head>
+  <body>
+    <main>
+      <p class="eyebrow">User guide</p>
+      <h1>How to use Baby Day</h1>
+      <p class="bar">
+        <a href="../">Open the app</a>
+        <a href="../tech/">Technical notes</a>
+      </p>
+      <p>
+        Baby Day is a night-first log for two parents. Either of you records a feed, sleep, diaper, or note in a few
+        taps. The home screen answers “what happened?” and “what needs attention?” It is a handover layer, not a medical
+        app, and it does not need an account.
+      </p>
+      <nav class="toc" aria-label="Guide sections">
+        <a href="#install">Install</a>
+        <a href="#log">Log care</a>
+        <a href="#night">Night shift</a>
+        <a href="#sync">Sync phones</a>
+        <a href="#camera">Crib camera</a>
+        <a href="#clinic">Clinic visit</a>
+        <a href="#backup">Backup</a>
+        <a href="#privacy">Privacy</a>
+        <a href="#fix">If something fails</a>
+      </nav>
+
+      <h2 id="install">First five minutes</h2>
+      <ol>
+        <li>
+          On iPhone: Safari → Share → <strong>Add to Home Screen</strong>. On Android: the browser’s
+          <strong>Install app</strong> prompt. The home-screen icon is the real app — it has no browser refresh bar.
+        </li>
+        <li>Enter the baby’s name and your name. Names stay on the phone so the timeline can say who logged what.</li>
+        <li>Log the next real event, not a test. Undo is on the toast if you tap the wrong thing.</li>
+      </ol>
+      <p>
+        Everything is saved on this phone first. Nothing is uploaded unless you later turn on sharing. The care day
+        starts at 5:00 local by default, not midnight — change that in Settings if your nights run later.
+      </p>
+
+      <h2 id="log">Logging care</h2>
+      <h3>Live breastfeed</h3>
+      <p>
+        Home → <strong>Feed</strong> → Start left or right. The timer stays on the home screen. Switch side when you
+        swap. End feed when you are done. If you also gave formula, tap <strong>Add formula top-up</strong> on the
+        running timer, or edit the event after.
+      </p>
+      <h3>A feed that already happened</h3>
+      <p>
+        Feed → <strong>Log times on each breast</strong> if you remember minutes. For a bottle, pick expressed,
+        formula, or mixed and enter the amount. Every sheet has <strong>Now / 10m / 20m / 1h</strong> chips and a clock
+        picker so the timestamp is the real one.
+      </p>
+      <h3>Sleep</h3>
+      <p>
+        Sleep opens a sheet: start now, or save a finished nap with started and woke times. If a sleep timer is already
+        running, the home Sleep button ends it. A leftover timer older than three hours shows a warning.
+      </p>
+      <h3>Diaper, pump, temp, weight, note</h3>
+      <p>One sheet each. Pump is left and right volume. Tap a timeline row to edit time, notes, or delete (with undo).</p>
+      <h3>Vitamin D and K</h3>
+      <p>
+        The red/green cards under the glance. Red means not given this care day — tap to log now. Green shows the clock
+        time; tap to edit or undo.
+      </p>
+
+      <h2 id="night">Use case: night shift</h2>
+      <p>
+        One parent has the phone. Log feeds and diapers as they happen. When you put the phone down for more than a
+        couple of minutes, the next open can show a <strong>handover</strong> card — events the other person logged
+        while you were away, once those events are on this phone.
+      </p>
+      <p>
+        Handover is not magic across town. If the other parent logged on their own phone, those events arrive when you
+        <a href="#sync">sync on this Wi-Fi</a>. Until then, each phone has its own night.
+      </p>
+
+      <h2 id="sync">Use case: two phones on home Wi-Fi</h2>
+      <p>
+        Settings → <strong>This Wi-Fi</strong>. The first time, one parent taps <strong>Show a passkey</strong>, the
+        other taps <strong>Enter a passkey</strong> and types the six digits. Both apps stay open on the same home
+        network. Logs copy phone-to-phone. They do not go to a baby cloud.
+      </p>
+      <p>
+        After that first link, each phone remembers the passkey for <strong>a day or a week</strong> (you choose). The
+        next catch-up is one tap: <strong>Sync</strong> on Home or in Settings. You do not type the code again until it
+        expires. Tap Sync on both phones while you are home.
+      </p>
+      <ul>
+        <li>One phone starts the link, the other joins. That role is remembered; you can swap it in Settings.</li>
+        <li>If the other phone’s saved code expired, they can still type the digits shown on your Sync card.</li>
+        <li>Locking a phone drops the live link. Already-copied events stay. Sync again later to catch up.</li>
+        <li>Guest Wi-Fi with “client isolation” will fail. QR remains as an offline fallback.</li>
+      </ul>
+
+      <h2 id="camera">Use case: crib camera on a spare phone</h2>
+      <p>
+        Camera is its own tab, not a setting. It is a live window on the home Wi-Fi, not part of the care log, and
+        nothing is recorded.
+      </p>
+      <ol>
+        <li>Spare phone upstairs → Camera → <strong>Use this phone as crib</strong>.</li>
+        <li>Plug it in. Set Auto-Lock to Never. Leave that screen open.</li>
+        <li>Save the crib passkey on each parent phone (type it, or Sync This Wi-Fi once — that copies it).</li>
+        <li>Downstairs → Camera → <strong>Watch the crib</strong>. Same home Wi-Fi reaches another floor.</li>
+      </ol>
+      <p>
+        The crib camera stays off until someone watches. Both parents can watch at once. A phone cannot see in the dark —
+        use a dim night light.
+      </p>
+
+      <h2 id="clinic">Use case: pediatrician or a worried night</h2>
+      <p>
+        The <strong>Report</strong> tab is the last 72 hours: sleep, milk, diapers, gaps, and a printable HTML file.
+        Settings can copy the last 48 hours as plain text, or print the 72-hour view to PDF. This is a log, not advice.
+      </p>
+
+      <h2 id="backup">Use case: keep a copy, or leave the app</h2>
+      <p>
+        Settings → Backup. JSON is the full local record. CSV is a spreadsheet of events. The 72-hour HTML report is for
+        sharing a slice, not a backup. If you only have one phone, skip Sync and export occasionally.
+      </p>
+
+      <h2 id="privacy">What stays on the phone</h2>
+      <p>
+        Default: events never leave the device. This Wi-Fi copies them over the local network after a short handshake.
+        Crib video frames stay on the LAN and are not stored. Leave optional cloud sync off for real baby data.
+      </p>
+
+      <h2 id="fix">If something fails</h2>
+      <ul>
+        <li><strong>Stuck screen on iPhone:</strong> Settings → Reload app.</li>
+        <li><strong>New version:</strong> a banner on the dock. Reload.</li>
+        <li>
+          <strong>Sync does nothing:</strong> both on the same Wi-Fi, both apps open, saved passkey not expired, one
+          phone set to start and the other to join.
+        </li>
+        <li>
+          <strong>Watch is black:</strong> crib phone still on the Camera crib screen, same Wi-Fi, night light on,
+          camera permission allowed.
+        </li>
+      </ul>
+    </main>
+  </body>
+</html>

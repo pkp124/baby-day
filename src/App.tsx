@@ -17,6 +17,8 @@ import {
   WeightSheet,
 } from "./components/Sheets";
 import { CribWatchPage } from "./components/CribWatch";
+import { CameraPage } from "./components/Camera";
+import { GuidePage, TechPage } from "./components/Docs";
 import { Dock } from "./components/Dock";
 import { SettingsPage } from "./components/Settings";
 import { activeSession, dayTotals, feedSeconds, fridgeEstimateMl, nextBreastSide, vitaminLabel } from "./lib/domain";
@@ -40,8 +42,10 @@ import {
   startSleep,
   switchFeedSide,
 } from "./lib/repo";
-import { useLan } from "./lib/lan";
+import { syncLan, useLan } from "./lib/lan";
 import { startCrib } from "./lib/lanMedia";
+import { isLanPasskeyFresh } from "./lib/lanRemember";
+import type { AppPage } from "./lib/pages";
 import type { CareEvent, FeedData, FeedMethod } from "./lib/types";
 
 type SheetKind =
@@ -79,20 +83,45 @@ export default function App() {
           needRefresh={needRefresh}
           onReload={reload}
           onRefreshSync={() => void store.refreshSync()}
+          onGuide={() => store.setPage("guide")}
+          onTech={() => store.setPage("tech")}
+        />
+        <AppDock page="settings" store={store} needRefresh={needRefresh} reload={reload} />
+      </div>
+    );
+  }
+
+  if (store.page === "guide") {
+    return (
+      <div className={needRefresh ? "app has-update" : "app"}>
+        <GuidePage onTech={() => store.setPage("tech")} />
+        <AppDock page="docs" store={store} needRefresh={needRefresh} reload={reload} />
+      </div>
+    );
+  }
+
+  if (store.page === "tech") {
+    return (
+      <div className={needRefresh ? "app has-update" : "app"}>
+        <TechPage onGuide={() => store.setPage("guide")} />
+        <AppDock page="docs" store={store} needRefresh={needRefresh} reload={reload} />
+      </div>
+    );
+  }
+
+  if (store.page === "camera") {
+    return (
+      <div className={needRefresh ? "app has-update" : "app"}>
+        <CameraPage
+          settings={store.settings}
           onCrib={() => {
             store.setPage("crib");
             void startCrib();
           }}
           onWatch={() => store.setPage("watch")}
+          onGuide={() => store.setPage("guide", "camera")}
         />
-        <Dock
-          page="settings"
-          onHome={() => store.setPage("home")}
-          onReport={() => store.setPage("report")}
-          onSettings={() => store.setPage("settings")}
-          needRefresh={needRefresh}
-          onReload={reload}
-        />
+        <AppDock page="camera" store={store} needRefresh={needRefresh} reload={reload} />
       </div>
     );
   }
@@ -106,14 +135,7 @@ export default function App() {
           now={now}
           onHome={() => store.setPage("home")}
         />
-        <Dock
-          page="report"
-          onHome={() => store.setPage("home")}
-          onReport={() => store.setPage("report")}
-          onSettings={() => store.setPage("settings")}
-          needRefresh={needRefresh}
-          onReload={reload}
-        />
+        <AppDock page="report" store={store} needRefresh={needRefresh} reload={reload} />
       </div>
     );
   }
@@ -121,7 +143,7 @@ export default function App() {
   if (store.page === "crib" || store.page === "watch") {
     return (
       <div className={needRefresh ? "app media-app has-update" : "app media-app"}>
-        <CribWatchPage mode={store.page} onBack={() => store.setPage("settings")} />
+        <CribWatchPage mode={store.page} onBack={() => store.setPage("camera")} />
       </div>
     );
   }
@@ -163,10 +185,30 @@ export default function App() {
               <h1 className="baby-name">{store.settings.babyName}</h1>
             </div>
           </header>
-          <button className={`pill-btn ${syncClass}`} type="button" onClick={() => store.setPage("settings")}>
-            <span className="dot" />
-            {syncLabel}
-          </button>
+          <div className="sync-bar">
+            <button className={`pill-btn ${syncClass}`} type="button" onClick={() => store.setPage("settings")}>
+              <span className="dot" />
+              {syncLabel}
+            </button>
+            {(isLanPasskeyFresh(store.settings) || lan.phase === "connected") && (
+              <button
+                className="primary sync-now"
+                type="button"
+                disabled={lan.phase === "host-offer" || lan.phase === "guest-wait" || lan.phase === "guest-answer"}
+                onClick={() =>
+                  void syncLan().catch((err: unknown) =>
+                    store.flash(err instanceof Error ? err.message : "Could not sync"),
+                  )
+                }
+              >
+                {lan.phase === "connected"
+                  ? "Sync"
+                  : lan.phase === "host-offer" || lan.phase === "guest-wait" || lan.phase === "guest-answer"
+                    ? "Linking…"
+                    : "Sync"}
+              </button>
+            )}
+          </div>
 
           {active && (
             <ActiveTimer
@@ -417,14 +459,7 @@ export default function App() {
           )}
         </div>
       )}
-      <Dock
-        page="home"
-        onHome={() => store.setPage("home")}
-        onReport={() => store.setPage("report")}
-        onSettings={() => store.setPage("settings")}
-        needRefresh={needRefresh}
-        onReload={reload}
-      />
+      <AppDock page="home" store={store} needRefresh={needRefresh} reload={reload} />
     </div>
   );
 }
@@ -480,5 +515,29 @@ function ActiveTimer({
         Add formula top-up
       </button>
     </section>
+  );
+}
+
+function AppDock({
+  page,
+  store,
+  needRefresh,
+  reload,
+}: {
+  page: "home" | "report" | "camera" | "settings" | "docs";
+  store: { setPage: (page: AppPage) => void };
+  needRefresh: boolean;
+  reload: () => void;
+}) {
+  return (
+    <Dock
+      page={page}
+      onHome={() => store.setPage("home")}
+      onReport={() => store.setPage("report")}
+      onCamera={() => store.setPage("camera")}
+      onSettings={() => store.setPage("settings")}
+      needRefresh={needRefresh}
+      onReload={reload}
+    />
   );
 }

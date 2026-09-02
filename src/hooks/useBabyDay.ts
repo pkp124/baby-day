@@ -107,9 +107,9 @@ export function useBabyDay() {
     });
   }, [live, settings?.lastVisitAt, sessionStartedAt]);
 
-  const setPage = useCallback((next: AppPage) => {
+  const setPage = useCallback((next: AppPage, section = "") => {
     setPageState(next);
-    applyPageHash(next);
+    applyPageHash(next, section);
   }, []);
 
   return {

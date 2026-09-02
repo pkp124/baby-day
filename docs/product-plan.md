@@ -34,7 +34,8 @@ It is a shared handover layer, not a medical or coaching product.
 - Export JSON/CSV and copy 48-hour summary
 - Optional Supabase sync + invite (not for real baby data until encrypted)
 - Local Wi-Fi handover via 6-digit passkey (QR fallback) + WebRTC (host-only ICE)
-- Crib camera / watch screens: camera on only while someone is watching, both parents can join, LAN-only
+- Crib camera / watch screens: camera on only while someone is watching, both parents can join, LAN-only (own **Camera** tab)
+- In-app user guide and technical notes (`#/guide`, `#/tech`), also hosted as `guide/` and `tech/` on Pages
 - Installable PWA, dark UI
 
 ## Out of scope until you have used it for a week
@@ -45,6 +46,6 @@ A **crib-phone video window** is a separate optional mode, not part of handover.
 
 ## Sharing between two phones
 
-**This Wi-Fi** (Settings): 6-digit passkey over the local network (QR still works). Events never go to a server. Both apps must be open on the same network. Catch up by linking again when you are both home.
+**This Wi-Fi** (Settings): 6-digit passkey over the local network (QR still works). After the first pair, Sync reuses the saved passkey for a day or a week. Events never go to a server. Both apps must be open on the same network. Catch up by tapping Sync when you are both home.
 
 There is still no cloud mailbox. Do not point this family at plaintext Supabase.

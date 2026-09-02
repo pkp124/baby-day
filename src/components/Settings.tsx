@@ -10,7 +10,6 @@ import { db } from "../lib/db";
 import { buildReport, reportFileStem } from "../lib/report";
 import { reportHtml } from "../lib/reportHtml";
 import { downloadFile, printHtml } from "../lib/download";
-import { formatPasskey, isValidPasskey, normalizePasskey } from "../lib/pairCode";
 
 export function SettingsPage({
   settings,
@@ -18,22 +17,21 @@ export function SettingsPage({
   needRefresh,
   onReload,
   onRefreshSync,
-  onCrib,
-  onWatch,
+  onGuide,
+  onTech,
 }: {
   settings: Settings;
   sync: SyncState;
   needRefresh: boolean;
   onReload: () => void;
   onRefreshSync: () => void;
-  onCrib: () => void;
-  onWatch: () => void;
+  onGuide: () => void;
+  onTech: () => void;
 }) {
   const [invite, setInvite] = useState("");
   const [join, setJoin] = useState("");
   const [message, setMessage] = useState("");
   const [email, setEmail] = useState("");
-  const cribCode = normalizePasskey(settings.cribPasskey);
 
   async function copySummary() {
     const events = await db.events.toArray();
@@ -176,54 +174,21 @@ export function SettingsPage({
         </div>
       </section>
 
-      <LanCard />
+      <LanCard settings={settings} />
 
       <section className="card quiet">
-        <h2>Crib camera</h2>
+        <h2>Guides</h2>
         <p className="muted">
-          Same home Wi-Fi reaches another floor. Save this passkey on each parent phone once. After that, Watch is one
-          tap — you do not walk upstairs to read the crib screen. The camera stays off until someone watches. Plug the
-          crib phone in and set Auto-Lock to Never.
-        </p>
-        {isValidPasskey(cribCode) ? (
-          <button
-            className="passkey-code"
-            type="button"
-            onClick={() => {
-              void navigator.clipboard.writeText(cribCode);
-              setMessage("Crib passkey copied");
-            }}
-            aria-label="Copy crib passkey"
-          >
-            {formatPasskey(cribCode)}
-          </button>
-        ) : null}
-        <label className="field">
-          Crib passkey on this phone
-          <input
-            className="passkey-input"
-            inputMode="numeric"
-            autoComplete="one-time-code"
-            autoCorrect="off"
-            autoCapitalize="off"
-            spellCheck={false}
-            pattern="[0-9]*"
-            maxLength={7}
-            value={formatPasskey(settings.cribPasskey)}
-            onChange={(e) => void saveSettings({ cribPasskey: normalizePasskey(e.target.value) })}
-            placeholder="from the crib phone"
-            aria-label="Crib passkey"
-          />
-        </label>
-        <p className="faint">
-          Use the same six digits on the crib phone and both parent phones. Linking This Wi-Fi also copies it.
+          How to log a night, sync two phones without typing the passkey every time, set up the crib camera, and what
+          stays on the device. The same pages are on this site at <span className="mono">guide/</span> and{" "}
+          <span className="mono">tech/</span>.
         </p>
         <div className="stack">
-          <button className="primary" type="button" onClick={onCrib}>
-            Use this phone as crib
+          <button className="primary" type="button" onClick={onGuide}>
+            User guide
           </button>
-          <button className="secondary" type="button" onClick={onWatch}>
-            Watch the crib
+          <button className="secondary" type="button" onClick={onTech}>
+            Technical notes
           </button>
         </div>
       </section>
@@ -231,7 +196,10 @@ export function SettingsPage({
       <section className="card quiet">
         <h2>Privacy</h2>
         <p className="muted">
-        Events stay on this phone until you link on this Wi-Fi. A 6-digit passkey matches the two phones, then logs copy over the local network — not into a cloud baby record. There is still no catch-up while the other phone is off the network; connect again when you are both home. Crib video is a separate live window: the camera runs only while someone is watching, and frames stay on the home network.
+        Events stay on this phone until you link on this Wi-Fi. A 6-digit passkey matches the two phones, then logs copy
+        over the local network — not into a cloud baby record. After the first link, Sync reuses that passkey for a day
+        or a week. There is still no catch-up while the other phone is off the network. Crib video lives on the Camera
+        tab: live on this Wi-Fi only, camera off until someone watches.
         </p>
       </section>
 

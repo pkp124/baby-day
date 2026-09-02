@@ -164,6 +164,18 @@ h1, h2, h3 { font-family: var(--display); font-weight: 640; margin: 0; }
 }
 .pill.warn .dot, .pill-btn.warn .dot { background: var(--diaper); }
 .pill.bad .dot, .pill-btn.bad .dot { background: var(--danger); }
+.sync-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+.sync-now {
+  min-height: 44px;
+  padding: 0 16px;
+  border-radius: 999px;
+}
 
 .card {
   background: var(--surface);
@@ -286,6 +298,7 @@ h1, h2, h3 { font-family: var(--display); font-weight: 640; margin: 0; }
 .secondary { background: var(--surface-2); border: 1px solid var(--line); }
 .ghost { background: transparent; color: var(--muted); }
 .danger { background: rgba(224, 122, 122, 0.16); color: var(--danger); }
+.primary:disabled, .secondary:disabled { opacity: 0.55; cursor: default; }
 
 .handover {
   margin: 8px 0 18px;
@@ -481,6 +494,8 @@ h1, h2, h3 { font-family: var(--display); font-weight: 640; margin: 0; }
   box-shadow: var(--shadow);
 }
 .dock-tabs.three { grid-template-columns: 1fr 1fr 1fr; }
+.dock-tabs.four { grid-template-columns: 1fr 1fr 1fr 1fr; }
+.dock-tabs.four button { font-size: 0.82rem; padding: 0 4px; }
 .dock-tabs button {
   position: relative;
   min-height: 48px;
@@ -642,4 +657,76 @@ h1, h2, h3 { font-family: var(--display); font-weight: 640; margin: 0; }
 .media-hud .stack .secondary,
 .media-hud .stack .danger {
   width: 100%;
+}
+
+.docs {
+  max-width: 720px;
+}
+.docs .lede {
+  color: var(--muted);
+  font-size: 1.05rem;
+  line-height: 1.5;
+  margin: 0 0 18px;
+}
+.docs section {
+  margin: 28px 0;
+  scroll-margin-top: 12px;
+}
+.docs h2 {
+  font-size: 1.45rem;
+  margin-bottom: 8px;
+}
+.docs h3 {
+  font-size: 1.05rem;
+  margin: 16px 0 6px;
+}
+.docs p,
+.docs li {
+  color: var(--muted);
+  line-height: 1.5;
+}
+.docs p { margin: 0 0 10px; }
+.docs-list {
+  margin: 0 0 12px;
+  padding-left: 1.2em;
+  display: grid;
+  gap: 8px;
+}
+.docs code,
+.docs .mono {
+  font-family: ui-monospace, SFMono-Regular, monospace;
+  font-size: 0.88em;
+}
+.docs pre {
+  overflow-x: auto;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 14px;
+  color: var(--ink);
+  font-size: 0.88rem;
+}
+.toc {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 8px;
+}
+.toc a {
+  color: var(--ink);
+  text-decoration: none;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 8px 12px;
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+.text-link {
+  display: inline;
+  color: var(--pump);
+  font-weight: 700;
+  min-height: 0;
+  padding: 0;
+  border-radius: 0;
 }

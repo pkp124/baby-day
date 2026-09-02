@@ -7,6 +7,8 @@ export type VolumeUnit = "ml" | "oz";
 export type WeightUnit = "kg" | "lb";
 export type TempUnit = "C" | "F";
 export type SyncStatus = "pending" | "synced" | "error";
+export type LanRememberTtl = "day" | "week";
+export type LanPasskeyRole = "host" | "guest" | "";
 
 export type FeedData = {
   method: FeedMethod;
@@ -90,6 +92,10 @@ export type Settings = {
   handoverCursor: string;
   onboardedAt: string;
   cribPasskey: string;
+  lanPasskey: string;
+  lanPasskeyRememberUntil: string;
+  lanPasskeyTtl: LanRememberTtl;
+  lanPasskeyRole: LanPasskeyRole;
 };
 
 export const defaultSettings = (): Settings => ({
@@ -108,4 +114,8 @@ export const defaultSettings = (): Settings => ({
   handoverCursor: "",
   onboardedAt: "",
   cribPasskey: "",
+  lanPasskey: "",
+  lanPasskeyRememberUntil: "",
+  lanPasskeyTtl: "week",
+  lanPasskeyRole: "",
 });

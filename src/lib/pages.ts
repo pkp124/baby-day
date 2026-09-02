@@ -1,39 +1,29 @@
-export type AppPage = "home" | "settings" | "report" | "crib" | "watch";
+export type AppPage = "home" | "settings" | "report" | "camera" | "crib" | "watch" | "guide" | "tech";
+
+const PAGES = new Set<AppPage>(["home", "settings", "report", "camera", "crib", "watch", "guide", "tech"]);
+
+function hashParts(hash: string): string[] {
+  return hash.replace(/^#\/?/, "").split(/[/?#]/).filter(Boolean);
+}
 
 export function pageFromHash(hash: string): AppPage {
-  const id = hash.replace(/^#\/?/, "").split(/[/?#]/)[0] ?? "";
-  switch (id) {
-    case "settings":
-    case "report":
-    case "crib":
-    case "watch":
-      return id;
-    case "home":
-    case "":
-      return "home";
-    default:
-      return "home";
-  }
+  const id = hashParts(hash)[0] ?? "";
+  if (id === "home" || id === "") return "home";
+  if (PAGES.has(id as AppPage)) return id as AppPage;
+  return "home";
 }
 
-export function hashFromPage(page: AppPage): string {
-  switch (page) {
-    case "home":
-      return "";
-    case "settings":
-    case "report":
-    case "crib":
-    case "watch":
-      return `#/${page}`;
-    default: {
-      const _never: never = page;
-      return _never;
-    }
-  }
+export function pageSectionFromHash(hash: string): string {
+  return hashParts(hash)[1] ?? "";
 }
 
-export function applyPageHash(page: AppPage) {
-  const next = hashFromPage(page);
+export function hashFromPage(page: AppPage, section = ""): string {
+  if (page === "home") return "";
+  return section ? `#/${page}/${section}` : `#/${page}`;
+}
+
+export function applyPageHash(page: AppPage, section = "") {
+  const next = hashFromPage(page, section);
   if (window.location.hash === next) return;
   if (page === "home") {
     const url = `${window.location.pathname}${window.location.search}`;
