@@ -1,160 +1,125 @@
-# Baby Day
+<div align="center">
+  <img src="public/icon-512.png" width="96" height="96" alt="Baby Day">
+  <h1>Baby Day</h1>
+  <p><strong>Night-first care log for two parents.</strong></p>
+  <p>Log a feed, sleep, or diaper in a few taps.<br>The home screen answers “what happened?” and “what needs attention?”</p>
+  <p>
+    <a href="https://pkp124.github.io/baby-day/"><img src="https://img.shields.io/badge/Open_the_app-e07a5f?style=for-the-badge&labelColor=1c1712" alt="Open the app"></a>
+    <a href="https://pkp124.github.io/baby-day/guide/"><img src="https://img.shields.io/badge/User_guide-8fbfa8?style=for-the-badge&labelColor=1c1712&color=8fbfa8" alt="User guide"></a>
+  </p>
+  <p>
+    <img src="https://img.shields.io/badge/license-MIT-e07a5f?style=flat-square" alt="MIT license">
+    <img src="https://img.shields.io/badge/account-not_required-7eb8c9?style=flat-square" alt="No account required">
+    <img src="https://img.shields.io/badge/data-on_this_phone-cbb9a6?style=flat-square" alt="Data stays on this phone">
+    <img src="https://img.shields.io/badge/PWA-add_to_home_screen-8fbfa8?style=flat-square" alt="Installable PWA">
+  </p>
+  <br>
+  <img src="docs/screenshots/home.png" width="420" alt="Home dashboard: last feed, pump, diaper, awake, and quick-log buttons">
+</div>
 
-Night-first care log for two parents. Log a feed, sleep, or diaper in a few taps. The home screen answers “what happened?” and “what needs attention?”
+<br>
 
-It is a shared handover layer — not a medical app, not a coach, and not a cloud baby tracker. No account is required.
+A shared **handover** layer — not a medical app, not a coach, and not a cloud baby tracker.
 
-**[Open the app](https://pkp124.github.io/baby-day/)**
-· **[How to use](https://pkp124.github.io/baby-day/guide/)**
-· **[Privacy](docs/privacy.md)**
-· **[Technical notes](https://pkp124.github.io/baby-day/tech/)**
+**[Open the app](https://pkp124.github.io/baby-day/)** · **[User guide](https://pkp124.github.io/baby-day/guide/)** · **[Privacy](docs/privacy.md)** · **[Technical notes](https://pkp124.github.io/baby-day/tech/)**
 
-The PWA is at [pkp124.github.io/baby-day](https://pkp124.github.io/baby-day/). In-app copies of the guides live at [`#/guide`](https://pkp124.github.io/baby-day/#/guide) and [`#/tech`](https://pkp124.github.io/baby-day/#/tech).
+## Features
 
-## What to expect
+- **Local-first** — events live in IndexedDB on this phone. Nothing is uploaded unless you turn sharing on.
+- **Two parents, same Wi-Fi** — pair once with a 6-digit passkey, then tap **Sync** for a day or a week.
+- **Built for 3am** — large taps, live feed/sleep timers, backdate chips (Now / 10m / 20m / 1h), undo.
+- **Handover glance** — last feed, last pump, last diaper, time awake, milk totals, vitamin D/K.
+- **72-hour report** — sleep, milk, diapers, and a printable HTML/PDF for a clinic visit.
+- **Optional crib window** — spare phone upstairs, Watch downstairs. Live on the LAN. Nothing recorded.
+- **No account** — install from the browser. Names stay on the phone so the timeline can say who logged what.
 
-- **Local-first.** Care events stay on this phone until you choose to share. Nothing is uploaded by default.
-- **Two parents, same home Wi-Fi.** Pair once with a 6-digit passkey. After that, **Sync** reuses the code for a day or a week.
-- **Night-friendly.** Large taps, a live feed/sleep timer, backdate chips (Now / 10m / 20m / 1h), and undo.
-- **Optional crib window.** A spare phone upstairs can be a live camera. Nothing is recorded. Frames stay on the home network.
-- **Honest limits.** Sync needs both apps open on the same Wi-Fi. A phone is a poor night camera. This log does not tell you what to do if the baby looks unwell.
+Care day starts at **5:00 local** (configurable), not midnight. Units: ml/oz, kg/lb, °C/°F.
 
-The care day starts at **5:00 local** by default, not midnight. Units are ml/oz, kg/lb, and °C/°F.
-
-## Install
+## Get started
 
 1. Open **[the app](https://pkp124.github.io/baby-day/)** on the phone you will actually use at night.
-2. **iPhone:** Safari → Share → **Add to Home Screen**. **Android:** Install app (or the browser’s Add to Home screen).
-3. Enter the baby’s name and your name. Names stay on the phone so the timeline can say who logged what.
+2. **iPhone:** Safari → Share → Add to Home Screen. **Android:** Install app.
+3. Enter the baby’s name and yours. Log the next real event — undo is on the toast if you miss-tap.
 
-The home-screen icon is the real app — it has no browser refresh bar. If a screen looks stuck, Settings → Reload app. When a new version is waiting, a banner on the dock says so.
+The dock is **Home · Report · Camera · Settings**. The home-screen icon is the real app (no browser refresh bar). If it looks stuck: Settings → Reload. A banner appears when a new version is waiting.
+
+Full walkthrough: **[user guide](https://pkp124.github.io/baby-day/guide/)** (also in the app: Settings → User guide).
 
 ## Screenshots
 
 <table>
   <tr>
     <td align="center">
-      <img src="docs/screenshots/home.png" alt="Home dashboard with last feed, last pump, last diaper, and quick-log buttons" />
-      <br /><sub>Home — last feed, pump, diaper, and awake</sub>
+      <img src="docs/screenshots/milk.png" alt="Milk totals and today’s timeline" width="240">
+      <br><sub>Milk + timeline</sub>
     </td>
     <td align="center">
-      <img src="docs/screenshots/milk.png" alt="Milk totals for fed, formula, pumped, and fridge, plus today’s timeline" />
-      <br /><sub>Milk today, plus the timeline</sub>
-    </td>
-  </tr>
-  <tr>
-    <td align="center">
-      <img src="docs/screenshots/feed.png" alt="Feed sheet with breast timer, per-side times, bottles, and a clock picker" />
-      <br /><sub>Feed — timer, breast times, or a bottle</sub>
+      <img src="docs/screenshots/feed.png" alt="Feed sheet with breast timer and bottle options" width="240">
+      <br><sub>Feed</sub>
     </td>
     <td align="center">
-      <img src="docs/screenshots/sleep.png" alt="Sleep sheet with start time, live start, and finished nap wake time" />
-      <br /><sub>Sleep — live timer or start and wake times</sub>
+      <img src="docs/screenshots/sleep.png" alt="Sleep sheet with live start and wake time" width="240">
+      <br><sub>Sleep</sub>
     </td>
   </tr>
 </table>
-
-The dock is **Home · Report · Camera · Settings**.
 
 ## What you can log
 
 | Action | What you record |
 | --- | --- |
-| **Feed** | Live left/right timer, minutes on each breast after the fact, formula, expressed milk, or mixed |
-| **Pump** | Left and right volume |
+| **Feed** | Live left/right timer, minutes after the fact, formula, expressed, or mixed |
+| **Sleep** | Start a timer, or log a finished nap |
 | **Diaper** | Wet, dirty, or both |
-| **Sleep** | Start a timer, or log a finished nap with started and woke times |
-| **Temp** | Temperature in °C or °F |
-| **Weight** | Optional check-in |
-| **Vitamin D / K** | Time given today. Cards are red until logged, green after. |
+| **Pump** | Left and right volume |
+| **Temp / weight** | Optional check-ins |
+| **Vitamin D / K** | Red until given this care day, green after |
 | **Note** | Anything else |
 
-Every sheet has **Now / 10m / 20m / 1h** chips and a date-and-time picker, so you can log the real clock time.
+Tap a timeline row to edit or delete. Nursing is a feed count; millilitres are for bottles. Fridge milk is pumped minus expressed bottles (not only today).
 
-Home glance: last feed, last pump, last diaper, time awake. **Vitamin D** and **Vitamin K** sit under that — tap red to log now, tap green to edit or undo. A **Milk** card splits:
+## Two phones
 
-- **Fed** — formula + expressed bottles today (nursing is a feed count, not millilitres)
-- **Formula** — formula given today
-- **Pumped** — pump sessions today
-- **Fridge** — leftover expressed milk: all pumped minus all expressed bottles, not only today. Spills and milk given away are not tracked.
+Settings → **This Wi-Fi**. One parent shows a 6-digit passkey, the other types it. Both apps stay open on the same home network. Logs copy phone-to-phone.
 
-**Report** is the last 72 hours (sleep, milk, diapers, gaps) plus a printable HTML / PDF. Settings can copy the last 48 hours as plain text for a clinic message.
+After that, tap **Sync** — the code is remembered for a day or a week. Locking a phone drops the live link; already-copied events stay. Guest Wi-Fi with client isolation will fail.
 
-## How to use
+There is still no catch-up while the other phone is off the network. Optional cloud sync exists but is **plaintext — leave it off** for real baby data.
 
-Full walkthrough: **[user guide](https://pkp124.github.io/baby-day/guide/)** (also [in the app](https://pkp124.github.io/baby-day/#/guide) under Settings → User guide).
+## Crib camera
 
-1. **Feed → Start left/right** starts a timer. Switch side, then end. **Log times on each breast** is for a feed that already happened. Bottles are on the same sheet. Add formula top-up from a running timer if you need to.
-2. **Sleep** opens a sheet: start now, or save a nap with started and woke times. If a sleep timer is already running, the home Sleep button ends it.
-3. **Pump**, **Diaper**, **Temp**, **Weight**, and **Note** are one sheet each.
-4. Tap a timeline row to edit time, breast minutes, notes, or delete (with undo).
-5. **Settings:** units, care-day start hour, 48-hour copy, JSON/CSV backup, and **This Wi-Fi**.
-6. **Camera** tab: spare phone as crib, parent phones Watch on the same home Wi-Fi.
+**Camera** tab on a spare phone upstairs → Use this phone as crib (plugged in, Auto-Lock Never). Downstairs → Watch the crib. Same Wi-Fi reaches another floor. Camera off until someone watches. A phone has no night vision — use a dim night light.
 
-### Two phones on home Wi-Fi
+[Guide](https://pkp124.github.io/baby-day/guide/#camera) · [How the video path works](docs/video-monitor.md)
 
-Settings → **This Wi-Fi**. One parent shows a 6-digit passkey, the other types it. Both apps stay open on the same network. Logs copy phone-to-phone — not into a baby cloud.
+## Docs
 
-After that first link, each phone remembers the code for **a day or a week**. Tap **Sync** on Home or in Settings. You do not type the code again until it expires. Locking a phone drops the live link; already-copied events stay. Guest Wi-Fi with client isolation will fail. QR remains as a fallback if a phone has no internet for the handshake.
-
-There is still no catch-up while the other phone is off the network. Optional cloud sync exists in Settings but stores events in a form the host can read — **leave it off** for real baby data.
-
-### Crib camera
-
-[Camera tab](https://pkp124.github.io/baby-day/#/camera) on a spare phone upstairs → **Use this phone as crib**. Plug it in, Auto-Lock → Never, leave that screen open. Downstairs → **Watch the crib**. Same home Wi-Fi reaches another floor. Camera off until someone watches. Nothing is recorded. A dim night light helps; a phone has no infrared.
-
-More: [user guide — camera](https://pkp124.github.io/baby-day/guide/#camera) · [video notes](docs/video-monitor.md)
-
-## Privacy
-
-Default: everything is on **this phone** (IndexedDB). Nothing is uploaded.
-
-This Wi-Fi copies events over the local network after a short handshake. Crib video frames stay on the LAN. The public passkey mailbox only carries WebRTC signaling, not feeds or video.
-
-Longer argument: [privacy.md](docs/privacy.md).
+- [User guide](https://pkp124.github.io/baby-day/guide/) · [in the app](https://pkp124.github.io/baby-day/#/guide) · [source](docs/user-guide.md)
+- [Technical notes](https://pkp124.github.io/baby-day/tech/) · [in the app](https://pkp124.github.io/baby-day/#/tech) · [source](docs/technical.md)
+- [Privacy](docs/privacy.md)
+- [Hosting](docs/hosting-and-backend.md) · [Product plan](docs/product-plan.md)
 
 ## Support
 
-Baby Day is free for families. No account, no ads, nobody selling baby logs.
+Baby Day is free. No account, no ads, nobody selling baby logs.
 
-If it helped a night and you want to say thanks, a coffee is welcome. A Buy Me a Coffee button will live here once the page is set up.
+If it helped a night: [star the repo](https://github.com/pkp124/baby-day) or [open an issue](https://github.com/pkp124/baby-day/issues).
 
-Until then: [star the repo](https://github.com/pkp124/baby-day) or [open an issue](https://github.com/pkp124/baby-day/issues) with what you needed at 3am.
-
-<!-- When the page exists, replace the paragraph above with:
+<!-- Buy Me a Coffee: uncomment and set YOUR_PAGE
 [![Buy Me A Coffee](https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png)](https://www.buymeacoffee.com/YOUR_PAGE)
-and set custom: in .github/FUNDING.yml to the same URL.
+Also set custom: in .github/FUNDING.yml
 -->
 
-## Guides
+## Develop
 
-| Who it is for | Where |
-| --- | --- |
-| New parent, day-to-day use | [Hosted user guide](https://pkp124.github.io/baby-day/guide/) · [in the app](https://pkp124.github.io/baby-day/#/guide) · [source](docs/user-guide.md) |
-| How it is built | [Hosted technical notes](https://pkp124.github.io/baby-day/tech/) · [in the app](https://pkp124.github.io/baby-day/#/tech) · [source](docs/technical.md) |
-| What leaves the phone | [Privacy](docs/privacy.md) |
-| Crib-phone video | [video-monitor.md](docs/video-monitor.md) |
-| Hosting / backend | [hosting-and-backend.md](docs/hosting-and-backend.md) |
-| Product plan | [product-plan.md](docs/product-plan.md) |
-
-Repo: [github.com/pkp124/baby-day](https://github.com/pkp124/baby-day) · License: [MIT](LICENSE)
-
-## For developers
-
-Node 22.
+Node 22. MIT licensed.
 
 ```bash
 npm install
+npm test
 npm run dev
 ```
 
-Open the URL Vite prints, preferably from a phone on the same network, or Chrome device emulation. Local docs: [http://localhost:5173/guide/](http://localhost:5173/guide/) and [http://localhost:5173/tech/](http://localhost:5173/tech/).
+Open the Vite URL from a phone on the same network, or Chrome device emulation. Local docs: `/guide/` and `/tech/`.
 
-```bash
-npm test
-npm run build
-```
-
-The PWA is a static site. GitHub Actions publishes `dist/` to [GitHub Pages](https://pkp124.github.io/baby-day/) on push to `main`. In the repo: **Settings → Pages → GitHub Actions**. Leave Supabase secrets empty if care events should stay on the phone.
-
-Vite `base` is `./`, so a project site (`username.github.io/baby-day/`) and a custom domain both work. A custom domain is nicer for “Add to Home Screen.”
+GitHub Actions publishes `dist/` to [GitHub Pages](https://pkp124.github.io/baby-day/) on push to `main`. Leave Supabase secrets empty so events stay on the phone. Vite `base` is `./`, so a project site or a custom domain both work — a custom domain is nicer for Add to Home Screen.
