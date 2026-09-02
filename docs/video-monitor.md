@@ -6,7 +6,7 @@ Assessment of a crib-phone → parent-phone video link, without buying a camera,
 
 This is a **live window**, not a camera product and not part of the care log. It is optional, LAN-only, and unrecorded.
 
-**Built:** Settings shows a **stable crib passkey**. The crib phone uses that same code every time. Parent phones remember it after you save it or after a This Wi-Fi catch-up, so Watch from another floor is one tap. Camera stays off until someone watches. Hashes `#/crib` and `#/watch`.
+**Built:** A **Camera** tab holds a **stable crib passkey**. The crib phone uses that same code every time. Parent phones remember it after you save it or after a This Wi-Fi catch-up, so Watch from another floor is one tap. Camera stays off until someone watches. Hashes `#/camera`, `#/crib` and `#/watch`.
 
 ## What you are asking for
 
@@ -81,9 +81,9 @@ Same home Wi-Fi is enough from another floor. You do not need a new camera or a 
 
 The code is not a new random number each nap. It is saved on the phone:
 
-1. Open Settings. The crib passkey appears and stays.
+1. Open the **Camera** tab. The crib passkey appears and stays.
 2. Copy it onto the other parent phone (type it, or link **This Wi-Fi** once — that copies the crib code with the care log).
-3. Use that same code in Settings on the spare crib phone.
+3. Use that same code on the spare crib phone.
 4. Leave the crib phone upstairs on **Use this phone as crib**.
 5. Downstairs, tap **Watch the crib**. This phone already has the code.
 
@@ -117,7 +117,7 @@ Parent phones (Watch)
   last watcher leaving turns the crib camera off
 ```
 
-Same origin, same installed PWA, same family passkey. Two buttons in Settings, next to **This Wi-Fi**: **Use this phone as crib** / **Watch the crib**. The home screen stays a logging dashboard.
+Same origin, same installed PWA, same family passkey. A **Camera** tab holds **Use this phone as crib** / **Watch the crib**. The home screen stays a logging dashboard.
 
 ## What not to do
 

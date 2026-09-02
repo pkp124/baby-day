@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#1c1712" />
+    <title>Baby Day technical notes</title>
+    <link rel="icon" href="../favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Fraunces:opsz,wght@9..144,520;9..144,640&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../docs.css" />
+  </head>
+  <body>
+    <main>
+      <p class="eyebrow">Technical</p>
+      <h1>How Baby Day is built</h1>
+      <p class="bar">
+        <a href="../">Open the app</a>
+        <a href="../guide/">User guide</a>
+      </p>
+      <p>
+        This page is for someone installing, hosting, or changing the app. Parents who only want to log a feed should
+        read the <a href="../guide/">user guide</a>.
+      </p>
+      <nav class="toc" aria-label="Technical sections">
+        <a href="#stack">Stack</a>
+        <a href="#data">Data</a>
+        <a href="#routes">Routes</a>
+        <a href="#lan">LAN sync</a>
+        <a href="#media">Crib media</a>
+        <a href="#privacy">Privacy</a>
+        <a href="#host">Hosting</a>
+      </nav>
+
+      <h2 id="stack">Stack</h2>
+      <p>
+        Vite + TypeScript + React PWA. Dexie (IndexedDB) is the source of truth on the device. The service worker caches
+        the app shell only, not care events. Vitest covers domain, merge, report, passkey, and page helpers.
+      </p>
+      <p>
+        There is no required backend. Optional Supabase exists for an invite-based cloud mailbox; it currently stores
+        plaintext event rows and must stay off for real baby data until payloads are encrypted on the device.
+      </p>
+
+      <h2 id="data">Data model</h2>
+      <p>
+        Events are append-first with client UUIDs, <code>rev</code>, <code>updatedAt</code>, and
+        <code>deletedAt</code> tombstones. Last-write-wins on sync. Canonical units: millilitres, grams, seconds,
+        Celsius.
+      </p>
+      <p>
+        Settings include a stable <code>cribPasskey</code> and a remembered LAN passkey:
+        <code>lanPasskey</code>, <code>lanPasskeyRememberUntil</code>, <code>lanPasskeyTtl</code>
+        (<code>day</code> or <code>week</code>), and <code>lanPasskeyRole</code> (<code>host</code> or
+        <code>guest</code>).
+      </p>
+
+      <h2 id="routes">Hash routes</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Hash</th>
+            <th>Screen</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>#/</code></td>
+            <td>Home logging dashboard</td>
+          </tr>
+          <tr>
+            <td><code>#/report</code></td>
+            <td>72-hour report and trends</td>
+          </tr>
+          <tr>
+            <td><code>#/camera</code></td>
+            <td>Crib / watch hub</td>
+          </tr>
+          <tr>
+            <td><code>#/crib</code>, <code>#/watch</code></td>
+            <td>Full-screen media</td>
+          </tr>
+          <tr>
+            <td><code>#/settings</code></td>
+            <td>Family, backup, This Wi-Fi</td>
+          </tr>
+          <tr>
+            <td><code>#/guide</code>, <code>#/tech</code></td>
+            <td>In-app documents; extra path is a section</td>
+          </tr>
+        </tbody>
+      </table>
+      <p>Static copies also ship at <code>guide/</code> and <code>tech/</code> on this GitHub Pages site.</p>
+
+      <h2 id="lan">LAN event sync</h2>
+      <p>
+        WebRTC data channel, host-only ICE (no STUN, no TURN). A 6-digit passkey names a short-lived public mailbox
+        (default ntfy.sh, topic <code>bdpairNNNNNN</code>) that carries compressed SDP only. Care events then move on the
+        LAN.
+      </p>
+      <p>
+        First pairing still shows or types the passkey. On data-channel open the app persists that code for 24 hours or
+        7 days. Later, <code>syncLan()</code> reuses it: the remembered host starts the offer, the remembered guest
+        joins. If already connected, Sync re-sends <code>hello</code> so both sides exchange digests again.
+      </p>
+
+      <h2 id="media">Crib media</h2>
+      <p>
+        Separate peer connection for media tracks. Mailbox topic <code>bdcribNNNNNN</code>. Camera and mic start only
+        while someone is watching. Relay/TURN candidates are dropped. The Camera tab is the hub; crib/watch routes are
+        full-screen and stop media on unmount.
+      </p>
+
+      <h2 id="privacy">Privacy stance</h2>
+      <p>
+        Default: on this phone only. Optional: LAN copy while both apps are open. Do not put plaintext events in git,
+        gists, or Supabase. Do not record crib video. Do not add TURN so it works from the office.
+      </p>
+
+      <h2 id="host">Hosting and development</h2>
+      <p>
+        Static PWA. GitHub Actions builds <code>dist/</code> and deploys GitHub Pages on push to <code>main</code>. Vite
+        <code>base</code> is <code>./</code>. Leave Supabase secrets empty for a private default.
+      </p>
+      <pre>npm install
+npm test
+npm run dev
+npm run build</pre>
+      <p>Node 22. Open the Vite URL from the phone on the same network, or Chrome device emulation.</p>
+    </main>
+  </body>
+</html>

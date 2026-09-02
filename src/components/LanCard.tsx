@@ -8,18 +8,31 @@ import {
   startLanGuest,
   startLanHost,
   startLanHostPasskey,
+  syncLan,
   useLan,
 } from "../lib/lan";
+import {
+  forgetRememberedLan,
+  formatRememberLeft,
+  isLanPasskeyFresh,
+  setLanRememberRole,
+  setLanRememberTtl,
+} from "../lib/lanRemember";
 import { formatPasskey, normalizePasskey } from "../lib/pairCode";
+import type { Settings } from "../lib/types";
 
-export function LanCard() {
+export function LanCard({ settings }: { settings: Settings }) {
   const lan = useLan();
   const [paste, setPaste] = useState("");
   const [scan, setScan] = useState(false);
   const [enter, setEnter] = useState(false);
   const [copied, setCopied] = useState(false);
   const [qrOpen, setQrOpen] = useState(false);
+  const [syncing, setSyncing] = useState(false);
   const passkeyMode = lan.pairing === "passkey";
+  const remembered = isLanPasskeyFresh(settings);
+  const ttl = settings.lanPasskeyTtl === "day" ? "day" : "week";
+  const role = settings.lanPasskeyRole === "guest" ? "guest" : "host";
 
   async function onScanned(text: string) {
     setScan(false);
@@ -33,40 +46,116 @@ export function LanCard() {
   }
 
   async function copyPasskey() {
-    if (!lan.passkey) return;
-    await navigator.clipboard.writeText(lan.passkey);
+    const code = lan.passkey || settings.lanPasskey;
+    if (!code) return;
+    await navigator.clipboard.writeText(normalizePasskey(code));
     setCopied(true);
     window.setTimeout(() => setCopied(false), 1500);
+  }
+
+  async function onSync() {
+    if (syncing) return;
+    setSyncing(true);
+    try {
+      await syncLan();
+    } catch (err) {
+      lanError(err instanceof Error ? err.message : "Could not sync");
+    } finally {
+      setSyncing(false);
+    }
   }
 
   return (
     <section className="card quiet">
       <h2>This Wi-Fi</h2>
       <p className="muted">
-        Catch up on the home network. One parent shows a 6-digit passkey, the other types it. Care events stay on the two
-        phones. Both of you keep the app open on the same Wi-Fi. Link again later to catch up.
+        Catch up on the home network. Pair with a 6-digit passkey once, then tap Sync for a day or a week without typing
+        it again. Care events stay on the two phones. Both of you keep the app open on the same Wi-Fi.
       </p>
       {lan.phase === "connected" ? (
         <div className="stack">
           <p>Linked with {lan.partnerName || "the other phone"}.</p>
+          <button className="primary" type="button" onClick={() => void onSync()} disabled={syncing}>
+            {syncing ? "Syncing…" : "Sync now"}
+          </button>
           <button className="secondary" type="button" onClick={() => disconnectLan()}>
             Disconnect
           </button>
         </div>
       ) : lan.phase === "idle" || lan.phase === "error" ? (
         <div className="stack">
-          <button className="primary" type="button" onClick={() => void startLanHostPasskey()}>
-            Show a passkey
-          </button>
-          <button
-            className="secondary"
-            type="button"
-            onClick={() => {
-              setEnter(true);
-            }}
-          >
-            Enter a passkey
-          </button>
+          {remembered ? (
+            <>
+              <p className="muted">
+                Saved passkey · {formatRememberLeft(settings.lanPasskeyRememberUntil)}. This phone{" "}
+                {role === "guest" ? "joins" : "starts"} the link. Tap Sync on both phones while you are home.
+              </p>
+              <button
+                className="passkey-code"
+                type="button"
+                onClick={() => void copyPasskey()}
+                aria-label="Copy saved passkey"
+              >
+                {formatPasskey(settings.lanPasskey)}
+              </button>
+              <p className="faint">{copied ? "Copied." : "The other phone can still type this if its saved code expired."}</p>
+              <button className="primary" type="button" onClick={() => void onSync()} disabled={syncing}>
+                {syncing ? "Syncing…" : "Sync"}
+              </button>
+              <div className="row">
+                <button
+                  className={ttl === "day" ? "primary grow" : "secondary grow"}
+                  type="button"
+                  onClick={() => void setLanRememberTtl("day")}
+                >
+                  Remember 1 day
+                </button>
+                <button
+                  className={ttl === "week" ? "primary grow" : "secondary grow"}
+                  type="button"
+                  onClick={() => void setLanRememberTtl("week")}
+                >
+                  Remember 1 week
+                </button>
+              </div>
+              <button
+                className="ghost"
+                type="button"
+                onClick={() => void setLanRememberRole(role === "guest" ? "host" : "guest")}
+              >
+                {role === "guest" ? "This phone will start the link instead" : "This phone will join instead"}
+              </button>
+              <details className="advanced">
+                <summary>Use a new passkey</summary>
+                <div className="stack" style={{ marginTop: 10 }}>
+                  <button className="secondary" type="button" onClick={() => void startLanHostPasskey()}>
+                    Show a new passkey
+                  </button>
+                  <button className="secondary" type="button" onClick={() => setEnter(true)}>
+                    Enter a different passkey
+                  </button>
+                  <button className="ghost" type="button" onClick={() => void forgetRememberedLan()}>
+                    Forget saved passkey
+                  </button>
+                </div>
+              </details>
+            </>
+          ) : (
+            <>
+              <button className="primary" type="button" onClick={() => void startLanHostPasskey()}>
+                Show a passkey
+              </button>
+              <button
+                className="secondary"
+                type="button"
+                onClick={() => {
+                  setEnter(true);
+                }}
+              >
+                Enter a passkey
+              </button>
+            </>
+          )}
         </div>
       ) : null}
 

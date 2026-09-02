@@ -31,10 +31,12 @@ describe("crib/watch hashes", () => {
   it("round-trips the app pages used for video", () => {
     expect(pageFromHash("#/crib")).toBe("crib");
     expect(pageFromHash("#/watch")).toBe("watch");
+    expect(pageFromHash("#/camera")).toBe("camera");
     expect(pageFromHash("#/settings")).toBe("settings");
     expect(pageFromHash("")).toBe("home");
     expect(hashFromPage("crib")).toBe("#/crib");
     expect(hashFromPage("watch")).toBe("#/watch");
+    expect(hashFromPage("camera")).toBe("#/camera");
     expect(hashFromPage("home")).toBe("");
   });
 });

@@ -4,6 +4,7 @@ import { db, getSettings, onEventCommit, putEvent, saveSettings } from "./db";
 import { gunzipBd1, gzipToBd1 } from "./gzip";
 import { digestOf, eventsNeeded, hostOnlySdp, shouldApplyIncoming } from "./lanMerge";
 import { localHostSdp, newLanPeer } from "./lanRtc";
+import { isLanPasskeyFresh, lanPasskeyFromSettings, persistRememberedLan } from "./lanRemember";
 import { generatePasskey, isValidPasskey, normalizePasskey } from "./pairCode";
 import { openPairMailbox, type PairMailbox, type PairWire } from "./pairMailbox";
 import type { CareEvent, Settings } from "./types";
@@ -183,6 +184,9 @@ function bindChannel(next: RTCDataChannel) {
     clearPairTimer();
     closeMailbox();
     emit({ phase: "connected", error: "", lastSyncAt: new Date().toISOString() });
+    if (state.pairing === "passkey" && isValidPasskey(state.passkey) && role) {
+      void persistRememberedLan(state.passkey, role);
+    }
     void hello();
   };
   next.onclose = () => {
@@ -268,13 +272,14 @@ export async function startLanHost() {
   await beginHostOffer("qr");
 }
 
-export async function startLanHostPasskey() {
+export async function startLanHostPasskey(existing?: string) {
   if (pairingLock) return;
   pairingLock = true;
   closeMailbox();
   teardownPeer();
   guestBusy = false;
-  const passkey = generatePasskey();
+  const reused = normalizePasskey(existing ?? "");
+  const passkey = isValidPasskey(reused) ? reused : generatePasskey();
   emit({
     phase: "host-offer",
     pairing: "passkey",
@@ -353,6 +358,24 @@ export async function startLanGuest(raw: string) {
   clearPairTimer();
   guestBusy = false;
   await beginGuestAnswer(raw, "qr");
+}
+
+export async function syncLan() {
+  if (state.phase === "connected") {
+    void hello();
+    return;
+  }
+  if (state.phase === "host-offer" || state.phase === "guest-wait" || state.phase === "guest-answer") return;
+  const settings = await getSettings();
+  if (!isLanPasskeyFresh(settings)) {
+    throw new Error("Saved passkey expired. Show or enter a new one.");
+  }
+  const code = lanPasskeyFromSettings(settings);
+  if (settings.lanPasskeyRole === "guest") {
+    await joinLanPasskey(code);
+    return;
+  }
+  await startLanHostPasskey(code);
 }
 
 export async function joinLanPasskey(raw: string) {
