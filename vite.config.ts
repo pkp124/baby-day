@@ -1,10 +1,34 @@
-import { defineConfig } from "vitest/config";
+import { defineConfig, type Plugin } from "vitest/config";
 import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
+
+function docsPages(): Plugin {
+  const rewrite = (req: { url?: string }) => {
+    const path = req.url?.split("?")[0] ?? "";
+    if (path === "/guide" || path === "/guide/") req.url = "/guide/index.html";
+    else if (path === "/tech" || path === "/tech/") req.url = "/tech/index.html";
+  };
+  return {
+    name: "docs-pages",
+    configureServer(server) {
+      server.middlewares.use((req, _res, next) => {
+        rewrite(req);
+        next();
+      });
+    },
+    configurePreviewServer(server) {
+      server.middlewares.use((req, _res, next) => {
+        rewrite(req);
+        next();
+      });
+    },
+  };
+}
 
 export default defineConfig({
   base: "./",
   plugins: [
+    docsPages(),
     react(),
     VitePWA({
       registerType: "prompt",
