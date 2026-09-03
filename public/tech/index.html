@@ -57,7 +57,7 @@
         Settings include a stable <code>cribPasskey</code> and a remembered LAN passkey:
         <code>lanPasskey</code>, <code>lanPasskeyRememberUntil</code>, <code>lanPasskeyTtl</code>
         (<code>day</code> or <code>week</code>), and <code>lanPasskeyRole</code> (<code>host</code> or
-        <code>guest</code>).
+        <code>guest</code>). <code>eventRetentionDays</code> is <code>0</code> (keep forever) or 90 / 365 / 730.
       </p>
 
       <h2 id="routes">Hash routes</h2>
@@ -75,7 +75,7 @@
           </tr>
           <tr>
             <td><code>#/report</code></td>
-            <td>72-hour report and trends</td>
+            <td>Time-range report and trends</td>
           </tr>
           <tr>
             <td><code>#/camera</code></td>

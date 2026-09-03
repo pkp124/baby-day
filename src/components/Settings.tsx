@@ -10,6 +10,8 @@ import { db } from "../lib/db";
 import { buildReport, reportFileStem } from "../lib/report";
 import { reportHtml } from "../lib/reportHtml";
 import { downloadFile, printHtml } from "../lib/download";
+import { RETENTION_CHOICES, retentionLabel } from "../lib/retention";
+import { pruneEventsOlderThanDays } from "../lib/repo";
 
 export function SettingsPage({
   settings,
@@ -61,6 +63,22 @@ export function SettingsPage({
     const events = await db.events.toArray();
     const model = buildReport(events, settings);
     printHtml(reportHtml(model, settings));
+  }
+
+  async function applyRetention(days: (typeof RETENTION_CHOICES)[number]) {
+    if (days > 0) {
+      const ok = window.confirm(
+        `Remove finished events older than ${retentionLabel(days)} from this phone? In-progress timers stay. After the next Wi-Fi sync, the other phone will delete them too. Export JSON first if you want a copy.`,
+      );
+      if (!ok) return;
+    }
+    await saveSettings({ eventRetentionDays: days });
+    if (days > 0) {
+      const n = await pruneEventsOlderThanDays(days);
+      setMessage(n ? `Removed ${n} old ${n === 1 ? "event" : "events"}` : "Nothing older than that");
+    } else {
+      setMessage("Keeping every event on this phone");
+    }
   }
 
   async function signIn(e: FormEvent) {
@@ -154,7 +172,10 @@ export function SettingsPage({
 
       <section className="card quiet">
         <h2>Backup</h2>
-        <p className="muted">Export is the backup. The 72-hour HTML report can be printed to PDF. Free-tier databases do not keep point-in-time history.</p>
+        <p className="muted">
+          Export is the backup. The Report tab can print any time range to PDF. Free-tier databases do not keep
+          point-in-time history.
+        </p>
         <div className="stack">
           <button className="secondary" type="button" onClick={copySummary}>
             Copy last 48 hours
@@ -171,6 +192,31 @@ export function SettingsPage({
           <button className="secondary" type="button" onClick={exportCsv}>
             Download CSV
           </button>
+        </div>
+      </section>
+
+      <section className="card quiet">
+        <h2>Data on this phone</h2>
+        <p className="muted">
+          Care events stay here until you delete them. There is no automatic expiry. A few years of logs is still a
+          small IndexedDB. Safari can still evict storage under pressure — JSON export is the copy that survives a
+          wipe.
+        </p>
+        <p className="faint">
+          Keep forever, or delete finished events older than a chosen window. In-progress timers stay. After the next
+          Wi-Fi sync, the other phone will delete them too.
+        </p>
+        <div className="row" style={{ marginTop: 8 }}>
+          {RETENTION_CHOICES.map((days) => (
+            <button
+              key={days}
+              className={settings.eventRetentionDays === days ? "primary" : "secondary"}
+              type="button"
+              onClick={() => void applyRetention(days)}
+            >
+              {retentionLabel(days)}
+            </button>
+          ))}
         </div>
       </section>
 

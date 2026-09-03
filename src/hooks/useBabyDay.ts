@@ -3,6 +3,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRegisterSW } from "virtual:pwa-register/react";
 import { db, getSettings, saveSettings } from "../lib/db";
 import { applyPageHash, pageFromHash, type AppPage } from "../lib/pages";
+import { requestPersistentStorage } from "../lib/persistStorage";
+import { pruneEventsOlderThanDays } from "../lib/repo";
 import { syncNow, type SyncState } from "../lib/sync";
 import { getSupabase } from "../lib/supabase";
 import type { CareEvent, Settings } from "../lib/types";
@@ -27,6 +29,7 @@ export function useBabyDay() {
 
   useEffect(() => {
     void getSettings().then(setSettings);
+    void requestPersistentStorage();
     const settingsSub = liveQuery(async () => {
       const row = await db.meta.get("settings");
       return row?.value as Settings | undefined;
@@ -51,7 +54,10 @@ export function useBabyDay() {
     };
   }, []);
 
-  const live = useMemo(() => events.filter((e) => !e.deletedAt), [events]);
+  useEffect(() => {
+    if (!settings?.eventRetentionDays) return;
+    void pruneEventsOlderThanDays(settings.eventRetentionDays);
+  }, [settings?.eventRetentionDays]);
 
   useEffect(() => {
     const sync = () => setPageState(pageFromHash(window.location.hash));
@@ -95,6 +101,8 @@ export function useBabyDay() {
     setToast({ message, undo });
     window.setTimeout(() => setToast(null), 7000);
   }, []);
+
+  const live = useMemo(() => events.filter((e) => !e.deletedAt), [events]);
 
   const handover = useMemo(() => {
     if (!settings?.lastVisitAt || !sessionStartedAt) return [] as CareEvent[];

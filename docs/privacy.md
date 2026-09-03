@@ -70,6 +70,10 @@ Signing in with Google still tells Google that this email uses the app. That is 
 
 Until C exists, connecting Supabase would upload plaintext. The UI should keep saying so, and we should not enable it for this family until encryption is in.
 
+## Retention
+
+On-device IndexedDB keeps every care event until you delete it. There is no rolling expiry. Volume is small (tens of thousands of events is still a few megabytes). The real risk is Safari evicting site data, not filling the disk. JSON export is the backup. Settings can optionally tombstone finished events older than 90 days, 1 year, or 2 years; that delete follows LAN sync to the other phone.
+
 ## What not to do
 
 - Put events in a git repo, gist, or issue. History never forgets.

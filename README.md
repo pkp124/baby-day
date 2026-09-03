@@ -29,7 +29,7 @@ A shared **handover** layer — not a medical app, not a coach, and not a cloud 
 - **Two parents, same Wi-Fi** — pair once with a 6-digit passkey, then tap **Sync** for a day or a week.
 - **Built for 3am** — large taps, live feed/sleep timers, backdate chips (Now / 10m / 20m / 1h), undo.
 - **Handover glance** — last feed, last pump, last diaper, time awake, milk totals, vitamin D/K.
-- **72-hour report** — sleep, milk, diapers, and a printable HTML/PDF for a clinic visit.
+- **Time-range report** — sleep, milk, diapers, and a printable HTML/PDF. Defaults to 72 hours; pick any start and end.
 - **Optional crib window** — spare phone upstairs, Watch downstairs. Live on the LAN. Nothing recorded.
 - **No account** — install from the browser. Names stay on the phone so the timeline can say who logged what.
 

@@ -23,6 +23,9 @@ Settings live in the Dexie `meta` table. Beside baby identity they include:
 
 - `cribPasskey` — stable crib-camera code
 - `lanPasskey`, `lanPasskeyRememberUntil`, `lanPasskeyTtl` (`day` | `week`), `lanPasskeyRole` (`host` | `guest`) — one-tap Sync after the first Wi-Fi pair
+- `eventRetentionDays` — `0` keeps every event; `90` / `365` / `730` tombstones finished events older than that window
+
+On launch the app asks the browser for persistent storage so Safari is less likely to evict IndexedDB. That is not a backup. JSON export is.
 
 ## Hash routes
 
@@ -31,7 +34,7 @@ GitHub Pages has no server rewrites. Navigation is hash-based:
 | Hash | Screen |
 | --- | --- |
 | `#/` | Home logging dashboard |
-| `#/report` | 72-hour report and trends |
+| `#/report` | Time-range report and lifetime trends |
 | `#/camera` | Crib / watch hub |
 | `#/crib`, `#/watch` | Full-screen media |
 | `#/settings` | Family, backup, This Wi-Fi |
