@@ -96,6 +96,8 @@ export type Settings = {
   lanPasskeyRememberUntil: string;
   lanPasskeyTtl: LanRememberTtl;
   lanPasskeyRole: LanPasskeyRole;
+  /** `0` keeps every event. Otherwise finished events older than this many days are tombstoned. */
+  eventRetentionDays: number;
 };
 
 export const defaultSettings = (): Settings => ({
@@ -118,4 +120,5 @@ export const defaultSettings = (): Settings => ({
   lanPasskeyRememberUntil: "",
   lanPasskeyTtl: "week",
   lanPasskeyRole: "",
+  eventRetentionDays: 0,
 });

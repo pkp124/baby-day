@@ -1,7 +1,7 @@
 import { describeEvent } from "./summary";
 import { formatDuration } from "./time";
 import { formatMl, formatTemp, formatWeight } from "./units";
-import { formatHours, formatPct, formatReportStamp, gapLabel, type ReportModel } from "./report";
+import { formatHours, formatPct, formatReportStamp, gapLabel, reportTitle, type ReportModel } from "./report";
 import {
   diaperTrendSvg,
   escapeXml,
@@ -69,6 +69,7 @@ th { color: #8a7868; font-weight: 700; font-size: 0.75rem; text-transform: upper
 export function reportHtml(model: ReportModel, settings: Settings) {
   const from = formatReportStamp(model.start, model.timezone);
   const to = formatReportStamp(model.end, model.timezone);
+  const title = reportTitle(model);
   const theme = lightChartTheme;
   const vitaminRows = model.days
     .map((day) => {
@@ -103,7 +104,7 @@ export function reportHtml(model: ReportModel, settings: Settings) {
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>${escapeXml(model.babyName)} — last ${model.hours} hours</title>
+  <title>${escapeXml(model.babyName)} — ${escapeXml(title)}</title>
   <style>${css()}</style>
 </head>
 <body>
@@ -112,7 +113,7 @@ export function reportHtml(model: ReportModel, settings: Settings) {
       <button type="button" onclick="window.print()">Print / save PDF</button>
     </div>
     <div class="eyebrow">Baby Day report</div>
-    <h1>${escapeXml(model.babyName)} — last ${model.hours} hours</h1>
+    <h1>${escapeXml(model.babyName)} — ${escapeXml(title)}</h1>
     <p class="muted">${escapeXml(from)} → ${escapeXml(to)} · ${escapeXml(model.timezone)}</p>
     <p class="note">A family handover snapshot, not medical advice. Care day starts at ${settings.careDayStartHour}:00.</p>
 
@@ -138,14 +139,14 @@ export function reportHtml(model: ReportModel, settings: Settings) {
       <span><i class="swatch" style="background:#c45c4a"></i>Temp</span>
     </div>
 
-    <h2>Last ${model.hours} hours</h2>
+    <h2>${escapeXml(title)}</h2>
     <div class="chart fit">${sleepSplitSvg(model, theme)}</div>
     <p class="note">Longest stretch ${escapeXml(formatDuration(model.longestSleepSeconds))} asleep, ${escapeXml(formatDuration(model.longestAwakeSeconds))} awake. Nursing is a feed count, not millilitres.</p>
 
     <h2>All days</h2>
     ${lifetimeHtml(model, settings)}
 
-    <h2>Vitamins by care day (last ${model.hours} hours)</h2>
+    <h2>Vitamins by care day</h2>
     <table>
       <thead><tr><th>Care day</th><th>Vitamin D</th><th>Vitamin K</th></tr></thead>
       <tbody>${vitaminRows || `<tr><td colspan="3">None</td></tr>`}</tbody>

@@ -17,6 +17,13 @@ import { describeEvent } from "./summary";
 
 export const REPORT_HOURS = 72;
 
+export type ReportRange = {
+  start: Date;
+  end: Date;
+};
+
+const MIN_RANGE_MS = 60_000;
+
 export type ClippedSpan = {
   id: string;
   type: CareEvent["type"];
@@ -149,10 +156,25 @@ export type ReportModel = {
 
 export type Interval = { startMs: number; endMs: number };
 
-export function reportWindow(now = new Date(), hours = REPORT_HOURS) {
+export function reportWindow(now = new Date(), hours = REPORT_HOURS): ReportRange & { hours: number } {
+  const safeHours = Number.isFinite(hours) && hours > 0 ? hours : REPORT_HOURS;
   const end = now.getTime();
-  const start = end - hours * 60 * 60 * 1000;
-  return { start: new Date(start), end: now, hours };
+  const start = end - safeHours * 60 * 60 * 1000;
+  return { start: new Date(start), end: now, hours: safeHours };
+}
+
+export function normalizeReportRange(start: Date, end: Date, now = new Date()): ReportRange & { hours: number } {
+  let startMs = start.getTime();
+  let endMs = end.getTime();
+  if (!Number.isFinite(startMs) || !Number.isFinite(endMs)) return reportWindow(now);
+  if (endMs < startMs) {
+    const swap = startMs;
+    startMs = endMs;
+    endMs = swap;
+  }
+  endMs = Math.min(endMs, now.getTime());
+  if (endMs - startMs < MIN_RANGE_MS) startMs = endMs - MIN_RANGE_MS;
+  return { start: new Date(startMs), end: new Date(endMs), hours: (endMs - startMs) / 3_600_000 };
 }
 
 export function clipInterval(startMs: number, endMs: number, winStart: number, winEnd: number): Interval | null {
@@ -373,8 +395,14 @@ export function buildLifetimeTrends(events: CareEvent[], settings: Settings, now
   };
 }
 
-export function buildReport(events: CareEvent[], settings: Settings, now = new Date(), hours = REPORT_HOURS): ReportModel {
-  const window = reportWindow(now, hours);
+export function buildReport(
+  events: CareEvent[],
+  settings: Settings,
+  now = new Date(),
+  range: number | ReportRange = REPORT_HOURS,
+): ReportModel {
+  const window = typeof range === "number" ? reportWindow(now, range) : normalizeReportRange(range.start, range.end, now);
+  const hours = window.hours;
   const winStart = window.start.getTime();
   const winEnd = window.end.getTime();
   const durationSeconds = (winEnd - winStart) / 1000;
@@ -611,15 +639,33 @@ export function formatPct(n: number) {
   return `${Math.round(n)}%`;
 }
 
+function ymdStamp(date: Date, timeZone: string) {
+  const parts = zonedParts(date, timeZone);
+  return `${parts.year}-${String(parts.month).padStart(2, "0")}-${String(parts.day).padStart(2, "0")}`;
+}
+
+export function reportWindowLabel(model: Pick<ReportModel, "start" | "end" | "timezone">) {
+  return `${formatReportStamp(model.start, model.timezone)} → ${formatReportStamp(model.end, model.timezone)}`;
+}
+
+export function reportTitle(model: ReportModel) {
+  const rolling = Math.abs(model.end.getTime() - model.generatedAt.getTime()) < 120_000;
+  if (rolling) {
+    if (Math.abs(model.hours - 24) < 0.05) return "Last 24 hours";
+    if (Math.abs(model.hours - 48) < 0.05) return "Last 48 hours";
+    if (Math.abs(model.hours - 72) < 0.05) return "Last 72 hours";
+    if (Math.abs(model.hours - 168) < 0.05) return "Last 7 days";
+  }
+  return reportWindowLabel(model);
+}
+
 export function reportFileStem(model: ReportModel) {
-  const parts = zonedParts(model.generatedAt, model.timezone);
-  const day = `${parts.year}-${String(parts.month).padStart(2, "0")}-${String(parts.day).padStart(2, "0")}`;
   const slug = model.babyName
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-|-$/g, "")
     .slice(0, 40);
-  return `baby-day-${model.hours}h-${slug || "baby"}-${day}`;
+  return `baby-day-${ymdStamp(model.start, model.timezone)}-to-${ymdStamp(model.end, model.timezone)}-${slug || "baby"}`;
 }
 
 export function gapLabel(minutes: number | null) {

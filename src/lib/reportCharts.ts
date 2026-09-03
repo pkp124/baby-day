@@ -107,24 +107,38 @@ function hourTickLabel(ms: number, timeZone: string) {
   }).format(new Date(ms));
 }
 
+function ganttTickLabel(ms: number, timeZone: string, tickMs: number) {
+  if (tickMs >= 24 * 60 * 60 * 1000) {
+    return new Intl.DateTimeFormat(undefined, {
+      timeZone,
+      month: "short",
+      day: "numeric",
+    }).format(new Date(ms));
+  }
+  return hourTickLabel(ms, timeZone);
+}
+
 export function ganttSvg(model: ReportModel, theme: ChartTheme) {
   const labelW = 56;
-  const pxPerHour = 14;
+  const hours = Math.max(model.hours, 1);
+  const pxPerHour = hours <= 96 ? 14 : hours <= 24 * 14 ? 8 : 4;
   const laneH = 28;
   const axisH = 20;
   const padTop = 6;
   const padBottom = 8;
-  const chartW = model.hours * pxPerHour;
+  const chartW = Math.min(Math.max(hours * pxPerHour, 280), 3600);
   const width = labelW + chartW + 8;
   const height = padTop + axisH + LANES.length * laneH + padBottom;
   const winStart = model.start.getTime();
   const winEnd = model.end.getTime();
   const span = Math.max(1, winEnd - winStart);
   const xAt = (ms: number) => labelW + ((ms - winStart) / span) * chartW;
+  const hourMs = 3_600_000;
+  const tickMs = hours <= 36 ? 6 * hourMs : hours <= 96 ? 12 * hourMs : hours <= 24 * 21 ? 24 * hourMs : 7 * 24 * hourMs;
 
   const parts: string[] = [];
   parts.push(
-    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="100%" role="img" aria-label="72-hour care timeline">`,
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="${width}" role="img" aria-label="Care timeline">`,
   );
   parts.push(`<rect width="${width}" height="${height}" fill="${theme.surface}" />`);
 
@@ -136,7 +150,6 @@ export function ganttSvg(model: ReportModel, theme: ChartTheme) {
     );
   });
 
-  const tickMs = 6 * 60 * 60 * 1000;
   const firstTick = Math.ceil(winStart / tickMs) * tickMs;
   for (let t = firstTick; t < winEnd; t += tickMs) {
     const x = xAt(t);
@@ -144,7 +157,7 @@ export function ganttSvg(model: ReportModel, theme: ChartTheme) {
       `<line x1="${round(x)}" y1="${padTop + axisH}" x2="${round(x)}" y2="${height - padBottom}" stroke="${theme.line}" stroke-width="1" />`,
     );
     parts.push(
-      `<text x="${round(x + 3)}" y="${padTop + 12}" fill="${theme.faint}" font-size="9" font-family="system-ui, sans-serif">${escapeXml(hourTickLabel(t, model.timezone))}</text>`,
+      `<text x="${round(x + 3)}" y="${padTop + 12}" fill="${theme.faint}" font-size="9" font-family="system-ui, sans-serif">${escapeXml(ganttTickLabel(t, model.timezone, tickMs))}</text>`,
     );
   }
 

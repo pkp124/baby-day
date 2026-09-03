@@ -1,5 +1,6 @@
 import type { BreastSide, CareEvent, DiaperKind, EventData, FeedData, FeedMethod, PumpData, Settings, SleepData, VitaminData, VitaminType } from "./types";
 import { db, enqueue, getSettings, putEvent, saveSettings, tombstoneEvent } from "./db";
+import { eventsPastRetention, retentionCutoffIso } from "./retention";
 import { minutesAgoIso, orderedInstants, spanFromStart } from "./time";
 
 function nowIso() {
@@ -262,6 +263,14 @@ export async function restoreEvent(event: CareEvent) {
   await putEvent(next);
   await enqueue("upsert", event.id);
   return next;
+}
+
+export async function pruneEventsOlderThanDays(days: number, now = new Date()) {
+  const cutoff = retentionCutoffIso(days, now);
+  if (!cutoff) return 0;
+  const doomed = eventsPastRetention(await db.events.toArray(), cutoff, now);
+  for (const event of doomed) await tombstoneEvent(event.id);
+  return doomed.length;
 }
 
 export async function completeOnboarding(input: { babyName: string; caregiverName: string }) {

@@ -560,7 +560,15 @@ h1, h2, h3 { font-family: var(--display); font-weight: 640; margin: 0; }
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
 }
-.chart-frame.scroll svg { min-width: 980px; }
+.chart-frame.scroll svg { min-width: 0; width: auto; height: auto; }
+.report-range { margin: 4px 0 8px; }
+.report-range-fields {
+  display: grid;
+  gap: 0 12px;
+}
+@media (min-width: 640px) {
+  .report-range-fields { grid-template-columns: 1fr 1fr; }
+}
 .chart-frame.trend svg {
   min-width: 0;
   width: auto;

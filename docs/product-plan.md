@@ -20,7 +20,7 @@ It is a shared handover layer, not a medical or coaching product.
 - **Care day** starts at 05:00 local (configurable), not midnight.
 - **Canonical units** in storage: millilitres, grams, seconds. Display ml/oz and kg/lb from settings.
 - **Auth**: Google if configured, magic link as backup. Do not auto-create a cloud family on login — the first parent taps “Start a shared family”, the second joins with a single-use invite.
-- **No charts, reminders, cry analysis, or medical advice in v1.** Time-since-last, daily totals, handover, and a 48-hour text snapshot are the dashboard.
+- **No charts, reminders, cry analysis, or medical advice in v1.** Time-since-last, daily totals, handover, and a 48-hour text snapshot are the dashboard. The Report tab is a chosen time range (default last 72 hours) plus lifetime trends.
 
 ## MVP in this codebase
 

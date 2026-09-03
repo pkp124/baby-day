@@ -164,8 +164,9 @@ export function GuidePage({ onTech }: { onTech: () => void }) {
       <section id="clinic">
         <h2>Use case: pediatrician or a worried night</h2>
         <p>
-          The <strong>Report</strong> tab is the last 72 hours: sleep, milk, diapers, gaps, and a printable HTML file.
-          Settings can copy the last 48 hours as plain text for a message, or print the 72-hour view to PDF.
+          The <strong>Report</strong> tab defaults to the last 72 hours. You can switch to 24h, 48h, 7 days, or pick
+          start and end timestamps. Sleep, milk, diapers, gaps, and the printable HTML file follow that range. Settings
+          can copy the last 48 hours as plain text for a message, or print a 72-hour snapshot to PDF.
         </p>
         <p>
           Home glance: last feed, last pump, last diaper, time awake. Milk splits fed / formula / pumped / fridge
@@ -178,10 +179,16 @@ export function GuidePage({ onTech }: { onTech: () => void }) {
       <section id="backup">
         <h2>Use case: keep a copy, or leave the app</h2>
         <p>
-          Settings → Backup. JSON is the full local record. CSV is a spreadsheet of events. The 72-hour HTML report is
-          for sharing a slice, not a backup. Free-tier databases do not keep point-in-time history; export is the backup.
+          Settings → Backup. JSON is the full local record. CSV is a spreadsheet of events. The HTML report is a chosen
+          time slice, not a backup. Free-tier databases do not keep point-in-time history; export is the backup.
         </p>
-        <p>If you only have one phone, you can skip Sync entirely. Export occasionally if the phone is your only copy.</p>
+        <p>
+          Events stay on this phone until you delete them. There is no automatic expiry. Safari can still evict IndexedDB
+          under pressure, so export occasionally if this phone is the only copy. Settings → Data on this phone can
+          delete finished events older than 90 days, 1 year, or 2 years. After the next Wi-Fi sync, the other phone
+          applies the same deletes.
+        </p>
+        <p>If you only have one phone, you can skip Sync entirely.</p>
       </section>
 
       <section id="privacy">
@@ -287,7 +294,8 @@ export function TechPage({ onGuide }: { onGuide: () => void }) {
           Settings live in the Dexie <code>meta</code> table. Beside baby identity they now include{" "}
           <code>cribPasskey</code> (stable) and <code>lanPasskey</code> + <code>lanPasskeyRememberUntil</code> +{" "}
           <code>lanPasskeyTtl</code> (<code>day</code> | <code>week</code>) + <code>lanPasskeyRole</code> (
-          <code>host</code> | <code>guest</code>) for one-tap Sync.
+          <code>host</code> | <code>guest</code>) for one-tap Sync, plus <code>eventRetentionDays</code> (
+          <code>0</code> keeps every event).
         </p>
       </section>
 
@@ -299,7 +307,7 @@ export function TechPage({ onGuide }: { onGuide: () => void }) {
             <code>#/</code> home
           </li>
           <li>
-            <code>#/report</code> 72-hour report and trends
+            <code>#/report</code> time-range report and trends
           </li>
           <li>
             <code>#/camera</code> crib / watch hub

@@ -1,5 +1,17 @@
+import { useMemo, useState } from "react";
 import type { CareEvent, Settings } from "../lib/types";
-import { buildReport, formatHours, formatPct, gapLabel, REPORT_HOURS, reportFileStem, type ReportModel } from "../lib/report";
+import {
+  buildReport,
+  formatHours,
+  formatPct,
+  gapLabel,
+  normalizeReportRange,
+  REPORT_HOURS,
+  reportFileStem,
+  reportTitle,
+  reportWindow,
+  type ReportModel,
+} from "../lib/report";
 import {
   darkChartTheme,
   diaperTrendSvg,
@@ -12,7 +24,7 @@ import {
 } from "../lib/reportCharts";
 import { reportHtml } from "../lib/reportHtml";
 import { downloadFile, printHtml } from "../lib/download";
-import { formatDuration } from "../lib/time";
+import { formatDuration, fromDatetimeLocalValue, toDatetimeLocalValue } from "../lib/time";
 import { formatMl, formatTemp, formatWeight } from "../lib/units";
 
 function Chart({
@@ -129,6 +141,103 @@ export function SeventyTwoCard({
   );
 }
 
+type RangeKind = "24" | "48" | "72" | "7d" | "custom";
+
+const RANGE_PRESETS: { kind: Exclude<RangeKind, "custom">; label: string }[] = [
+  { kind: "24", label: "24h" },
+  { kind: "48", label: "48h" },
+  { kind: "72", label: "72h" },
+  { kind: "7d", label: "7d" },
+];
+
+function hoursForKind(kind: Exclude<RangeKind, "custom">) {
+  switch (kind) {
+    case "24":
+      return 24;
+    case "48":
+      return 48;
+    case "72":
+      return 72;
+    case "7d":
+      return 168;
+    default: {
+      const _exhaustive: never = kind;
+      return _exhaustive;
+    }
+  }
+}
+
+function RangeBar({
+  timezone,
+  now,
+  kind,
+  startIso,
+  endIso,
+  onKind,
+  onStartIso,
+  onEndIso,
+}: {
+  timezone: string;
+  now: Date;
+  kind: RangeKind;
+  startIso: string;
+  endIso: string;
+  onKind: (kind: RangeKind) => void;
+  onStartIso: (iso: string) => void;
+  onEndIso: (iso: string) => void;
+}) {
+  const maxValue = toDatetimeLocalValue(now.toISOString(), timezone);
+  return (
+    <div className="report-range">
+      <div className="timechips">
+        {RANGE_PRESETS.map((preset) => (
+          <button
+            key={preset.kind}
+            type="button"
+            className={kind === preset.kind ? "on" : ""}
+            onClick={() => onKind(preset.kind)}
+          >
+            {preset.label}
+          </button>
+        ))}
+        <button type="button" className={kind === "custom" ? "on" : ""} onClick={() => onKind("custom")}>
+          Custom
+        </button>
+      </div>
+      {kind === "custom" && (
+        <div className="report-range-fields">
+          <label className="field">
+            Start
+            <input
+              type="datetime-local"
+              step={60}
+              max={maxValue}
+              value={toDatetimeLocalValue(startIso, timezone)}
+              onChange={(e) => {
+                if (!e.target.value) return;
+                onStartIso(fromDatetimeLocalValue(e.target.value, timezone));
+              }}
+            />
+          </label>
+          <label className="field">
+            End
+            <input
+              type="datetime-local"
+              step={60}
+              max={maxValue}
+              value={toDatetimeLocalValue(endIso, timezone)}
+              onChange={(e) => {
+                if (!e.target.value) return;
+                onEndIso(fromDatetimeLocalValue(e.target.value, timezone));
+              }}
+            />
+          </label>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function ReportPage({
   events,
   settings,
@@ -140,7 +249,26 @@ export function ReportPage({
   now: Date;
   onHome: () => void;
 }) {
-  const report = buildReport(events, settings, now);
+  const [kind, setKind] = useState<RangeKind>("72");
+  const [customStartIso, setCustomStartIso] = useState(() => reportWindow(now).start.toISOString());
+  const [customEndIso, setCustomEndIso] = useState(() => now.toISOString());
+
+  function chooseKind(next: RangeKind) {
+    if (next === "custom" && kind !== "custom") {
+      const win = reportWindow(now, hoursForKind(kind));
+      setCustomStartIso(win.start.toISOString());
+      setCustomEndIso(win.end.toISOString());
+    }
+    setKind(next);
+  }
+
+  const range = useMemo(() => {
+    if (kind === "custom") return normalizeReportRange(new Date(customStartIso), new Date(customEndIso), now);
+    return reportWindow(now, hoursForKind(kind));
+  }, [kind, customStartIso, customEndIso, now]);
+
+  const report = buildReport(events, settings, now, range);
+  const title = reportTitle(report);
   const html = reportHtml(report, settings);
 
   function saveHtml() {
@@ -160,8 +288,22 @@ export function ReportPage({
         </div>
       </header>
       <p className="muted">
-        Last {REPORT_HOURS} hours plus trends for every care day on this phone. Not medical advice. Save HTML, or print
-        to PDF.
+        Pick a time range for sleep, milk, diapers, and the printable file. Trends below still cover every care day on
+        this phone. Not medical advice.
+      </p>
+      <RangeBar
+        timezone={settings.timezone}
+        now={now}
+        kind={kind}
+        startIso={customStartIso}
+        endIso={customEndIso}
+        onKind={chooseKind}
+        onStartIso={setCustomStartIso}
+        onEndIso={setCustomEndIso}
+      />
+      <p className="faint">
+        {title}
+        {kind === "custom" ? ` · ${formatHours(report.hours)}` : ""}
       </p>
       <div className="row" style={{ margin: "12px 0 16px" }}>
         <button className="primary grow" type="button" onClick={saveHtml}>
@@ -176,7 +318,7 @@ export function ReportPage({
 
       <h2>Care timeline</h2>
       <p className="faint">Sleep and feeds are bars. Diapers, pumps, and temperatures are dots. Scroll sideways.</p>
-      <Chart markup={ganttSvg(report, darkChartTheme)} label="72-hour care timeline" scroll />
+      <Chart markup={ganttSvg(report, darkChartTheme)} label={`${title} care timeline`} scroll />
       <div className="chart-legend">
         <span>
           <i className="swatch sleep" />
@@ -200,8 +342,8 @@ export function ReportPage({
         </span>
       </div>
 
-      <h2>Last {REPORT_HOURS} hours</h2>
-      <Chart markup={sleepSplitSvg(report, darkChartTheme)} label="Percent of time asleep" />
+      <h2>{title}</h2>
+      <Chart markup={sleepSplitSvg(report, darkChartTheme)} label={`Percent of time asleep, ${title}`} />
       <p className="faint">
         Longest stretch {formatDuration(report.longestSleepSeconds)} asleep, {formatDuration(report.longestAwakeSeconds)}{" "}
         awake. {report.sleepCount} sleep {report.sleepCount === 1 ? "stretch" : "stretches"}. Breast{" "}
@@ -210,7 +352,7 @@ export function ReportPage({
 
       <LifetimeSection report={report} settings={settings} />
 
-      <h2>Vitamins (last {REPORT_HOURS} hours)</h2>
+      <h2>Vitamins</h2>
       <div className="timeline">
         {report.days.map((day) => (
           <div key={day.key} className="event">

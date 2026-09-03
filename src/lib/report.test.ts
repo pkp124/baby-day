@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildReport, clipInterval, formatHours, formatPct, gapMs, mergeIntervals, reportFileStem } from "./report";
+import { buildReport, clipInterval, formatHours, formatPct, gapMs, mergeIntervals, normalizeReportRange, reportFileStem, reportTitle } from "./report";
 import { reportHtml } from "./reportHtml";
 import { darkChartTheme, ganttSvg, sleepTrendSvg, tempLineSvg } from "./reportCharts";
 import { defaultSettings, type CareEvent, type EventType } from "./types";
@@ -57,6 +57,17 @@ describe("interval helpers", () => {
 
   it("treats the whole window as awake when there is no sleep", () => {
     expect(gapMs([], 0, 1000)).toEqual([1000]);
+  });
+
+  it("swaps inverted timestamps and clamps the end to now", () => {
+    const range = normalizeReportRange(
+      new Date("2026-08-30T18:00:00.000Z"),
+      new Date("2026-08-30T10:00:00.000Z"),
+      now,
+    );
+    expect(range.start.toISOString()).toBe("2026-08-30T10:00:00.000Z");
+    expect(range.end.toISOString()).toBe("2026-08-30T12:00:00.000Z");
+    expect(range.hours).toBe(2);
   });
 });
 
@@ -208,7 +219,7 @@ describe("72-hour report", () => {
     ];
     const model = buildReport(events, nasty, now);
     const html = reportHtml(model, nasty);
-    expect(html).toContain("last 72 hours");
+    expect(html).toContain("Last 72 hours");
     expect(html).toContain("&lt;script&gt;");
     expect(html).not.toContain("<script>alert(1)</script>");
     expect(html).toContain("<svg");
@@ -217,7 +228,8 @@ describe("72-hour report", () => {
     expect(html).toContain("1 wet");
     expect(html).toContain("All days");
     expect(html).toContain("Sleep hours per care day");
-    expect(reportFileStem(model)).toBe("baby-day-72h-arjun-title-script-alert-1-script-2026-08-30");
+    expect(reportFileStem(model)).toBe("baby-day-2026-08-27-to-2026-08-30-arjun-title-script-alert-1-script");
+    expect(reportTitle(model)).toBe("Last 72 hours");
   });
 
   it("draws sleep bars and temperature points on the gantt", () => {
@@ -245,6 +257,40 @@ describe("72-hour report", () => {
     expect(formatPct(58.6)).toBe("59%");
     expect(formatHours(14.24)).toBe("14.2h");
     expect(formatHours(8)).toBe("8h");
+  });
+
+  it("builds a custom timestamp window and ignores events outside it", () => {
+    const events = [
+      event({
+        id: "before",
+        type: "diaper",
+        time: "2026-08-28T09:00:00.000Z",
+        data: { kind: "wet" },
+      }),
+      event({
+        id: "inside",
+        type: "diaper",
+        time: "2026-08-28T15:00:00.000Z",
+        data: { kind: "dirty" },
+      }),
+      event({
+        id: "after",
+        type: "diaper",
+        time: "2026-08-29T12:00:00.000Z",
+        data: { kind: "both" },
+      }),
+    ];
+    const range = {
+      start: new Date("2026-08-28T12:00:00.000Z"),
+      end: new Date("2026-08-29T00:00:00.000Z"),
+    };
+    const report = buildReport(events, settings, now, range);
+    expect(report.hours).toBe(12);
+    expect(report.wet).toBe(0);
+    expect(report.dirty).toBe(1);
+    expect(report.diapers).toHaveLength(1);
+    expect(reportTitle(report)).toContain("→");
+    expect(reportFileStem(report)).toBe("baby-day-2026-08-28-to-2026-08-29-arjun");
   });
 });
 

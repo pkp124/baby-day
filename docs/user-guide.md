@@ -77,7 +77,7 @@ A phone cannot see in the dark. Use a dim night light, not the torch on the baby
 
 ## Use case: pediatrician or a worried night
 
-The **Report** tab is the last 72 hours: sleep, milk, diapers, gaps, and a printable HTML file. Settings can copy the last 48 hours as plain text for a message, or print the 72-hour view to PDF.
+The **Report** tab defaults to the last 72 hours. You can switch to 24h, 48h, 7 days, or pick start and end timestamps. Sleep, milk, diapers, gaps, and the printable HTML file follow that range. Settings can copy the last 48 hours as plain text for a message, or print a 72-hour snapshot to PDF.
 
 Home glance: last feed, last pump, last diaper, time awake. Milk splits fed / formula / pumped / fridge estimate (all pumped minus all expressed bottles, not only today). Trends on Report fill in as days accumulate.
 
@@ -85,9 +85,11 @@ This is a log, not advice. If the baby looks unwell, use the clinic — the app 
 
 ## Use case: keep a copy, or leave the app
 
-Settings → Backup. JSON is the full local record. CSV is a spreadsheet of events. The 72-hour HTML report is for sharing a slice, not a backup. Export is the backup.
+Settings → Backup. JSON is the full local record. CSV is a spreadsheet of events. The HTML report is a chosen time slice, not a backup. Export is the backup.
 
-If you only have one phone, you can skip Sync entirely. Export occasionally if the phone is your only copy.
+Events stay on this phone until you delete them. There is no automatic expiry. A few years of logs is still a small IndexedDB. Safari can still evict storage under pressure, so export occasionally if this phone is the only copy. Settings → Data on this phone can delete finished events older than 90 days, 1 year, or 2 years. After the next Wi-Fi sync, the other phone applies the same deletes.
+
+If you only have one phone, you can skip Sync entirely.
 
 ## What stays on the phone
 
