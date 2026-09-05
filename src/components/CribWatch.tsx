@@ -9,6 +9,7 @@ import {
   stopMedia,
   retryCribCamera,
   useMedia,
+  missingPictureCopy,
   type MediaPhase,
 } from "../lib/lanMedia";
 import { formatPasskey, isValidPasskey, normalizePasskey } from "../lib/pairCode";
@@ -26,9 +27,10 @@ export function CribWatchPage({
   const [digits, setDigits] = useState("");
   const [joinError, setJoinError] = useState("");
   const [joining, setJoining] = useState(false);
+  const [playError, setPlayError] = useState("");
   const stream = mode === "crib" ? media.localStream : media.remoteStream;
   const liveCount = media.watchers.filter((watcher) => watcher.live).length;
-  useWakeLock(true, !stream);
+  useWakeLock(true);
 
   useEffect(() => {
     void getSettings().then((settings) => {
@@ -51,13 +53,21 @@ export function CribWatchPage({
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
+    setPlayError("");
     if (!stream) {
       video.srcObject = null;
       return;
     }
     video.srcObject = mode === "crib" ? new MediaStream(stream.getVideoTracks()) : stream;
     video.playsInline = true;
-    void video.play().catch(() => undefined);
+    void video.play().catch((err) => {
+      const blocked = err instanceof DOMException && err.name === "NotAllowedError";
+      setPlayError(
+        blocked
+          ? "This phone blocked the picture. Tap the screen, then try again."
+          : "This phone would not play the picture. Leave this screen and try again.",
+      );
+    });
   }, [stream, mode]);
 
   useEffect(() => {
@@ -83,26 +93,38 @@ export function CribWatchPage({
 
   const status = statusLine(mode, media.phase, liveCount, media.watchers.length);
   const showJoin = mode === "watch" && media.phase !== "live" && media.phase !== "waiting" && media.phase !== "starting";
+  const picture = playError
+    ? { text: playError, kind: "error" as const }
+    : missingPictureCopy({
+        mode,
+        phase: media.phase,
+        hasStream: Boolean(stream),
+        watcherCount: media.watchers.length,
+        error: media.error,
+      });
+  const showVideo = Boolean(stream) && !playError;
 
   return (
     <div className="media-stage">
-      {stream ? (
-        <video
-          ref={videoRef}
-          className={mode === "crib" && media.facing === "user" ? "mirror" : undefined}
-          playsInline
-          autoPlay
-          muted={mode === "crib" || !soundOn}
-        />
-      ) : (
-        <div className="media-blank" />
-      )}
+      <video
+        ref={videoRef}
+        hidden={!showVideo}
+        className={mode === "crib" && media.facing === "user" ? "mirror" : undefined}
+        playsInline
+        autoPlay
+        muted={mode === "crib" || !soundOn}
+      />
+      {!showVideo ? (
+        <div className="media-blank">
+          {picture ? <p className={picture.kind === "error" ? "warn-text" : "muted"}>{picture.text}</p> : null}
+        </div>
+      ) : null}
       <div className="media-hud">
         <div>
           <div className="eyebrow">{mode === "crib" ? "Crib" : "Watch"}</div>
           <p className="media-status">{status}</p>
           <p className="faint">Live on this Wi-Fi only. Nothing is recorded or uploaded. Camera runs only while someone is watching.</p>
-          {media.error ? <p className="warn-text">{media.error}</p> : null}
+          {media.error && showVideo ? <p className="warn-text">{media.error}</p> : null}
           {mode === "crib" && media.passkey ? (
             <button
               className="passkey-code"
@@ -171,7 +193,7 @@ export function CribWatchPage({
               </button>
             </div>
           )}
-          {mode === "watch" && media.phase === "live" && (
+          {mode === "watch" && media.phase === "live" && showVideo && (
             <button
               className={soundOn ? "primary" : "secondary"}
               type="button"
@@ -188,6 +210,29 @@ export function CribWatchPage({
               {soundOn ? "Mute" : "Unmute sound"}
             </button>
           )}
+          {playError ? (
+            <button
+              className="primary"
+              type="button"
+              onClick={() => {
+                setPlayError("");
+                const video = videoRef.current;
+                if (!video) return;
+                video.muted = mode === "crib" || !soundOn;
+                video.volume = 1;
+                void video.play().catch((err) => {
+                  const blocked = err instanceof DOMException && err.name === "NotAllowedError";
+                  setPlayError(
+                    blocked
+                      ? "This phone blocked the picture. Tap the screen, then try again."
+                      : "This phone would not play the picture. Leave this screen and try again.",
+                  );
+                });
+              }}
+            >
+              Try again
+            </button>
+          ) : null}
           {mode === "crib" && !media.localStream && (media.error || media.watchers.length > 0) && (
             <button className="primary" type="button" onClick={() => void retryCribCamera()}>
               Start camera
@@ -240,8 +285,9 @@ function statusLine(mode: "crib" | "watch", phase: MediaPhase, liveCount: number
     case "waiting":
       return watcherCount ? "Starting camera for a watcher…" : "Standby · camera off";
     case "idle":
-    case "error":
       return "Crib is not streaming yet.";
+    case "error":
+      return "Camera did not start.";
     default: {
       const _never: never = phase;
       return _never;

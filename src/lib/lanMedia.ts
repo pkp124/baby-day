@@ -56,6 +56,23 @@ let starting = false;
 let cameraGate: Promise<unknown> = Promise.resolve();
 let offerQueue: Promise<void> = Promise.resolve();
 let unbindResume: (() => void) | null = null;
+let watchPictureTimer = 0;
+
+function clearWatchPictureTimer() {
+  if (!watchPictureTimer) return;
+  window.clearTimeout(watchPictureTimer);
+  watchPictureTimer = 0;
+}
+
+function armWatchPictureTimer() {
+  clearWatchPictureTimer();
+  watchPictureTimer = window.setTimeout(() => {
+    if (state.role !== "watch" || state.remoteStream) return;
+    emit({
+      error: "No picture from the crib phone. Leave that screen open, plugged in, on the same Wi-Fi.",
+    });
+  }, WATCH_PICTURE_WAIT_MS);
+}
 
 function emit(patch: Partial<MediaState>) {
   state = { ...state, ...patch };
@@ -93,6 +110,42 @@ function getMediaSnapshot() {
 export function cameraShouldRun(watcherCount: number) {
   return watcherCount > 0;
 }
+
+export type MissingPicture = { text: string; kind: "error" | "status" };
+
+export function missingPictureCopy(input: {
+  mode: "crib" | "watch";
+  phase: MediaPhase;
+  hasStream: boolean;
+  watcherCount: number;
+  error: string;
+}): MissingPicture | null {
+  if (input.hasStream) return null;
+  if (input.error) return { text: input.error, kind: "error" };
+  if (input.mode === "crib") {
+    if (input.watcherCount > 0) {
+      return { text: "Starting camera for a watcher…", kind: "status" };
+    }
+    return null;
+  }
+  switch (input.phase) {
+    case "starting":
+      return { text: "Finding the crib phone…", kind: "status" };
+    case "waiting":
+      return { text: "Waiting for the crib camera…", kind: "status" };
+    case "live":
+      return { text: "The picture is missing. Leave the crib phone open on the same Wi-Fi.", kind: "error" };
+    case "idle":
+    case "error":
+      return { text: "Could not start the picture. Check the crib phone is open on this Wi-Fi.", kind: "error" };
+    default: {
+      const _never: never = input.phase;
+      return _never;
+    }
+  }
+}
+
+export const WATCH_PICTURE_WAIT_MS = 12_000;
 
 export function cribMediaConstraints(facing: CameraFacing, audio: boolean): MediaStreamConstraints {
   return {
@@ -254,7 +307,7 @@ async function offerTo(id: string) {
   try {
     stream = await ensureCamera();
   } catch (err) {
-    emit({ error: mediaError(err, "Could not open the camera") });
+    emit({ phase: "error", error: mediaError(err, "Could not open the camera") });
     return;
   }
   if (!stream) return;
@@ -356,6 +409,7 @@ async function answerOffer(msg: PairWire) {
   sessions.set("crib", session);
   emit({ remoteStream: null });
   pc.ontrack = (ev) => {
+    clearWatchPictureTimer();
     const fromPeer = ev.streams[0];
     if (fromPeer) {
       emit({ remoteStream: fromPeer, phase: "live", error: "" });
@@ -374,6 +428,7 @@ async function answerOffer(msg: PairWire) {
     if (pc.connectionState === "failed") {
       session.live = false;
       emit({ phase: "waiting", error: "Picture dropped. Waiting for the crib phone…" });
+      armWatchPictureTimer();
     }
   };
   try {
@@ -396,7 +451,11 @@ async function onWatchWire(msg: PairWire) {
     case "bye":
       closeAllPeers();
       sessions.clear();
-      emit({ phase: "waiting", remoteStream: null, error: "" });
+      emit({
+        phase: "waiting",
+        remoteStream: null,
+        error: "The crib phone stopped. Leave that screen open, then try Watch again.",
+      });
       return;
     case "hello":
     case "answer":
@@ -409,8 +468,23 @@ async function onWatchWire(msg: PairWire) {
 }
 
 function mediaError(err: unknown, fallback: string) {
-  const denied = err instanceof DOMException && (err.name === "NotAllowedError" || err.name === "NotFoundError");
-  return denied ? "Camera is blocked. Allow the camera, then tap Start camera." : err instanceof Error ? err.message : fallback;
+  if (err instanceof DOMException) {
+    switch (err.name) {
+      case "NotAllowedError":
+        return "Camera is blocked. Allow the camera, then tap Start camera.";
+      case "NotFoundError":
+        return "This phone has no camera.";
+      case "NotReadableError":
+        return "The camera is in use by another app. Close it, then tap Start camera.";
+      case "OverconstrainedError":
+        return "This camera could not start. Flip the camera, or tap Start camera.";
+      case "AbortError":
+        return "The camera stopped before it started. Tap Start camera.";
+      default:
+        return err.message || fallback;
+    }
+  }
+  return err instanceof Error ? err.message : fallback;
 }
 
 export async function startCrib(opts?: { facing?: CameraFacing; mic?: boolean }) {
@@ -506,6 +580,7 @@ export async function startWatch(passkey: string) {
     await mailbox.publish({ k: "hello", name: settings.caregiverName || "Parent" });
     await rememberCribPasskey(code);
     emit({ phase: "waiting", error: "" });
+    armWatchPictureTimer();
   } catch (err) {
     closeMailbox();
     emit({
@@ -540,6 +615,7 @@ export function stopMedia() {
   if (mailbox && state.role !== "off") void mailbox.publish({ k: "bye" }).catch(() => undefined);
   unbindResume?.();
   unbindResume = null;
+  clearWatchPictureTimer();
   closeAllPeers();
   sessions.clear();
   closeMailbox();
