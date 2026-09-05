@@ -91,7 +91,7 @@ After the first save, you never need to read the crib screen to connect. Both pa
 
 ### 5. Audio is more sensitive than video
 
-[privacy.md](./privacy.md) already refuses cry/audio upload. Live audio on the LAN is useful (a stirring baby) and still never stored. Default the mic **off**; let the watcher unmute. Do not record, do not transcribe, do not detect cries.
+[privacy.md](./privacy.md) already refuses cry/audio upload. Live audio on the LAN is useful (a stirring baby) and still never stored. The crib sends the mic while someone is watching; Watch stays silent until you unmute (phones will not autoplay sound). The crib phone can still turn the mic off. Do not record, do not transcribe, do not detect cries.
 
 ## Privacy rule (non-negotiable)
 

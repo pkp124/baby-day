@@ -71,7 +71,7 @@ Camera is its own tab, not a setting. It is a live window on the home Wi-Fi, not
 3. Save the crib passkey on each parent phone (type it, or Sync This Wi-Fi once — that copies it).
 4. Downstairs → Camera → **Watch the crib**. Same home Wi-Fi reaches another floor.
 
-The crib camera stays off until someone watches, then turns off when the last watcher leaves. Both parents can watch at once. Sound is off until you unmute (phones will not autoplay audio).
+The crib camera stays off until someone watches, then turns off when the last watcher leaves. Both parents can watch at once. The crib sends live sound; Watch stays silent until you unmute (phones will not autoplay audio). Turn the mic off on the crib phone if you want a silent picture.
 
 A phone cannot see in the dark. Use a dim night light, not the torch on the baby’s face. If the crib phone sleeps or you swipe the app away, Watch cannot start until you unlock it again.
 
