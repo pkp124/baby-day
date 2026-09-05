@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyMicEnabled, cameraShouldRun, cribMediaConstraints } from "./lanMedia";
+import { applyMicEnabled, cameraShouldRun, cribMediaConstraints, missingPictureCopy } from "./lanMedia";
 import { hashFromPage, pageFromHash } from "./pages";
 import { topicForCribPasskey } from "./pairCode";
 import { parsePairMessage, serializePairMessage, type PairWire } from "./pairMailbox";
@@ -29,6 +29,53 @@ describe("on-demand crib camera", () => {
 
   it("uses a crib mailbox topic that does not collide with event pairing", () => {
     expect(topicForCribPasskey("482 107")).toBe("bdcrib482107");
+  });
+});
+
+describe("missing crib picture", () => {
+  it("is silent on crib standby and errors when Watch has no picture", () => {
+    expect(
+      missingPictureCopy({ mode: "crib", phase: "waiting", hasStream: false, watcherCount: 0, error: "" }),
+    ).toBeNull();
+    expect(
+      missingPictureCopy({
+        mode: "crib",
+        phase: "waiting",
+        hasStream: false,
+        watcherCount: 1,
+        error: "",
+      }),
+    ).toEqual({ text: "Starting camera for a watcher…", kind: "status" });
+    expect(
+      missingPictureCopy({
+        mode: "crib",
+        phase: "error",
+        hasStream: false,
+        watcherCount: 1,
+        error: "Camera is blocked. Allow the camera, then tap Start camera.",
+      }),
+    ).toEqual({
+      text: "Camera is blocked. Allow the camera, then tap Start camera.",
+      kind: "error",
+    });
+    expect(
+      missingPictureCopy({ mode: "watch", phase: "waiting", hasStream: false, watcherCount: 0, error: "" }),
+    ).toEqual({ text: "Waiting for the crib camera…", kind: "status" });
+    expect(
+      missingPictureCopy({
+        mode: "watch",
+        phase: "waiting",
+        hasStream: false,
+        watcherCount: 0,
+        error: "No picture from the crib phone. Leave that screen open, plugged in, on the same Wi-Fi.",
+      }),
+    ).toEqual({
+      text: "No picture from the crib phone. Leave that screen open, plugged in, on the same Wi-Fi.",
+      kind: "error",
+    });
+    expect(
+      missingPictureCopy({ mode: "watch", phase: "live", hasStream: true, watcherCount: 0, error: "" }),
+    ).toBeNull();
   });
 });
 

@@ -102,5 +102,5 @@ See [privacy.md](./privacy.md) for the longer argument.
 - **Stuck screen on iPhone:** Settings → Reload app. Home-screen PWAs have no pull-to-refresh.
 - **New version:** a banner on the dock. Reload. Phones can keep an old copy until you do.
 - **Sync does nothing:** both on the same Wi-Fi, both apps open, saved passkey not expired, one phone set to start and the other to join.
-- **Watch is black:** crib phone still on the Camera crib screen, same Wi-Fi, night light on, camera permission allowed.
+- **Watch is black:** the screen now says why. Usually the crib phone slept, left the Camera crib screen, or camera permission is blocked. Same Wi-Fi, night light on, then try Watch again.
 - **Timer you forgot:** end it. Events older than three hours warn you. You can edit the end time.

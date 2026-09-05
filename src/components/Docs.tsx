@@ -219,8 +219,8 @@ export function GuidePage({ onTech }: { onTech: () => void }) {
             phone set to start and the other to join.
           </li>
           <li>
-            <strong>Watch is black:</strong> crib phone still on the Camera crib screen, same Wi-Fi, night light on,
-            camera permission allowed.
+            <strong>Watch is black:</strong> the screen now says why. Usually the crib phone slept, left the Camera
+            crib screen, or camera permission is blocked. Same Wi-Fi, night light on, then try Watch again.
           </li>
           <li>
             <strong>Timer you forgot:</strong> end it. Events older than three hours warn you. You can edit the end time.
