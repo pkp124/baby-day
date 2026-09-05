@@ -26,7 +26,9 @@ export function CribWatchPage({
   const [digits, setDigits] = useState("");
   const [joinError, setJoinError] = useState("");
   const [joining, setJoining] = useState(false);
-  useWakeLock(true, true);
+  const stream = mode === "crib" ? media.localStream : media.remoteStream;
+  const liveCount = media.watchers.filter((watcher) => watcher.live).length;
+  useWakeLock(true, !stream);
 
   useEffect(() => {
     void getSettings().then((settings) => {
@@ -46,17 +48,24 @@ export function CribWatchPage({
     return () => stopMedia();
   }, [mode]);
 
-  const stream = mode === "crib" ? media.localStream : media.remoteStream;
-  const liveCount = media.watchers.filter((watcher) => watcher.live).length;
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    if (!stream) {
+      video.srcObject = null;
+      return;
+    }
+    video.srcObject = mode === "crib" ? new MediaStream(stream.getVideoTracks()) : stream;
+    video.playsInline = true;
+    void video.play().catch(() => undefined);
+  }, [stream, mode]);
 
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
-    video.srcObject = stream;
     video.muted = mode === "crib" || !soundOn;
-    if (!stream) return;
-    void video.play().catch(() => undefined);
-  }, [stream, mode, soundOn]);
+    video.volume = 1;
+  }, [mode, soundOn]);
 
   async function join(code: string) {
     const next = normalizePasskey(code);
@@ -163,7 +172,19 @@ export function CribWatchPage({
             </div>
           )}
           {mode === "watch" && media.phase === "live" && (
-            <button className={soundOn ? "primary" : "secondary"} type="button" onClick={() => setSoundOn((on) => !on)}>
+            <button
+              className={soundOn ? "primary" : "secondary"}
+              type="button"
+              onClick={() => {
+                const next = !soundOn;
+                setSoundOn(next);
+                const video = videoRef.current;
+                if (!video) return;
+                video.muted = !next;
+                video.volume = 1;
+                void video.play().catch(() => undefined);
+              }}
+            >
               {soundOn ? "Mute" : "Unmute sound"}
             </button>
           )}

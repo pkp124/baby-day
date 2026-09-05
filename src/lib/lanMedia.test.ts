@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { cameraShouldRun } from "./lanMedia";
+import { applyMicEnabled, cameraShouldRun, cribMediaConstraints } from "./lanMedia";
 import { hashFromPage, pageFromHash } from "./pages";
 import { topicForCribPasskey } from "./pairCode";
 import { parsePairMessage, serializePairMessage, type PairWire } from "./pairMailbox";
@@ -9,6 +9,22 @@ describe("on-demand crib camera", () => {
     expect(cameraShouldRun(0)).toBe(false);
     expect(cameraShouldRun(1)).toBe(true);
     expect(cameraShouldRun(2)).toBe(true);
+  });
+
+  it("opens the crib camera with a microphone track", () => {
+    expect(cribMediaConstraints("environment", true).audio).toEqual({
+      echoCancellation: true,
+      noiseSuppression: true,
+    });
+    expect(cribMediaConstraints("environment", false).audio).toBe(false);
+  });
+
+  it("mutes crib audio by disabling the track instead of dropping it", () => {
+    const track = { enabled: true };
+    applyMicEnabled({ getAudioTracks: () => [track] }, false);
+    expect(track.enabled).toBe(false);
+    applyMicEnabled({ getAudioTracks: () => [track] }, true);
+    expect(track.enabled).toBe(true);
   });
 
   it("uses a crib mailbox topic that does not collide with event pairing", () => {
