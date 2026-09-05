@@ -153,7 +153,8 @@ export function GuidePage({ onTech }: { onTech: () => void }) {
         </ol>
         <p>
           The crib camera stays off until someone watches, then turns off when the last watcher leaves. Both parents can
-          watch at once. Sound is off until you unmute (phones will not autoplay audio).
+          watch at once. The crib sends live sound; Watch stays silent until you unmute (phones will not autoplay audio).
+          Turn the mic off on the crib phone if you want a silent picture.
         </p>
         <p>
           A phone cannot see in the dark. Use a dim night light, not the torch on the baby’s face. If the crib phone
@@ -218,8 +219,8 @@ export function GuidePage({ onTech }: { onTech: () => void }) {
             phone set to start and the other to join.
           </li>
           <li>
-            <strong>Watch is black:</strong> crib phone still on the Camera crib screen, same Wi-Fi, night light on,
-            camera permission allowed.
+            <strong>Watch is black:</strong> the screen now says why. Usually the crib phone slept, left the Camera
+            crib screen, or camera permission is blocked. Same Wi-Fi, night light on, then try Watch again.
           </li>
           <li>
             <strong>Timer you forgot:</strong> end it. Events older than three hours warn you. You can edit the end time.

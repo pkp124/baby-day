@@ -71,7 +71,7 @@ Camera is its own tab, not a setting. It is a live window on the home Wi-Fi, not
 3. Save the crib passkey on each parent phone (type it, or Sync This Wi-Fi once — that copies it).
 4. Downstairs → Camera → **Watch the crib**. Same home Wi-Fi reaches another floor.
 
-The crib camera stays off until someone watches, then turns off when the last watcher leaves. Both parents can watch at once. Sound is off until you unmute (phones will not autoplay audio).
+The crib camera stays off until someone watches, then turns off when the last watcher leaves. Both parents can watch at once. The crib sends live sound; Watch stays silent until you unmute (phones will not autoplay audio). Turn the mic off on the crib phone if you want a silent picture.
 
 A phone cannot see in the dark. Use a dim night light, not the torch on the baby’s face. If the crib phone sleeps or you swipe the app away, Watch cannot start until you unlock it again.
 
@@ -102,5 +102,5 @@ See [privacy.md](./privacy.md) for the longer argument.
 - **Stuck screen on iPhone:** Settings → Reload app. Home-screen PWAs have no pull-to-refresh.
 - **New version:** a banner on the dock. Reload. Phones can keep an old copy until you do.
 - **Sync does nothing:** both on the same Wi-Fi, both apps open, saved passkey not expired, one phone set to start and the other to join.
-- **Watch is black:** crib phone still on the Camera crib screen, same Wi-Fi, night light on, camera permission allowed.
+- **Watch is black:** the screen now says why. Usually the crib phone slept, left the Camera crib screen, or camera permission is blocked. Same Wi-Fi, night light on, then try Watch again.
 - **Timer you forgot:** end it. Events older than three hours warn you. You can edit the end time.

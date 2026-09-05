@@ -33,7 +33,7 @@ const idle: MediaState = {
   role: "off",
   phase: "idle",
   facing: "environment",
-  mic: false,
+  mic: true,
   error: "",
   passkey: "",
   localStream: null,
@@ -53,9 +53,26 @@ const listeners = new Set<() => void>();
 const sessions = new Map<string, Session>();
 let mailbox: PairMailbox | null = null;
 let starting = false;
-let cameraBusy = false;
+let cameraGate: Promise<unknown> = Promise.resolve();
 let offerQueue: Promise<void> = Promise.resolve();
 let unbindResume: (() => void) | null = null;
+let watchPictureTimer = 0;
+
+function clearWatchPictureTimer() {
+  if (!watchPictureTimer) return;
+  window.clearTimeout(watchPictureTimer);
+  watchPictureTimer = 0;
+}
+
+function armWatchPictureTimer() {
+  clearWatchPictureTimer();
+  watchPictureTimer = window.setTimeout(() => {
+    if (state.role !== "watch" || state.remoteStream) return;
+    emit({
+      error: "No picture from the crib phone. Leave that screen open, plugged in, on the same Wi-Fi.",
+    });
+  }, WATCH_PICTURE_WAIT_MS);
+}
 
 function emit(patch: Partial<MediaState>) {
   state = { ...state, ...patch };
@@ -92,6 +109,76 @@ function getMediaSnapshot() {
 
 export function cameraShouldRun(watcherCount: number) {
   return watcherCount > 0;
+}
+
+export type MissingPicture = { text: string; kind: "error" | "status" };
+
+export function missingPictureCopy(input: {
+  mode: "crib" | "watch";
+  phase: MediaPhase;
+  hasStream: boolean;
+  watcherCount: number;
+  error: string;
+}): MissingPicture | null {
+  if (input.hasStream) return null;
+  if (input.error) return { text: input.error, kind: "error" };
+  if (input.mode === "crib") {
+    if (input.watcherCount > 0) {
+      return { text: "Starting camera for a watcher…", kind: "status" };
+    }
+    return null;
+  }
+  switch (input.phase) {
+    case "starting":
+      return { text: "Finding the crib phone…", kind: "status" };
+    case "waiting":
+      return { text: "Waiting for the crib camera…", kind: "status" };
+    case "live":
+      return { text: "The picture is missing. Leave the crib phone open on the same Wi-Fi.", kind: "error" };
+    case "idle":
+    case "error":
+      return { text: "Could not start the picture. Check the crib phone is open on this Wi-Fi.", kind: "error" };
+    default: {
+      const _never: never = input.phase;
+      return _never;
+    }
+  }
+}
+
+export const WATCH_PICTURE_WAIT_MS = 12_000;
+
+export function cribMediaConstraints(facing: CameraFacing, audio: boolean): MediaStreamConstraints {
+  return {
+    video: {
+      facingMode: { ideal: facing },
+      width: { ideal: 1280 },
+      height: { ideal: 720 },
+    },
+    audio: audio ? { echoCancellation: true, noiseSuppression: true } : false,
+  };
+}
+
+export function applyMicEnabled(stream: { getAudioTracks(): { enabled: boolean }[] } | null, mic: boolean) {
+  stream?.getAudioTracks().forEach((track) => {
+    track.enabled = mic;
+  });
+}
+
+function streamHasLive(stream: MediaStream | null, kind: "audio" | "video") {
+  return Boolean(stream?.getTracks().some((track) => track.kind === kind && track.readyState === "live"));
+}
+
+function audioDenied(err: unknown) {
+  return err instanceof DOMException && (err.name === "NotAllowedError" || err.name === "NotFoundError" || err.name === "OverconstrainedError");
+}
+
+function withCamera<T>(fn: () => Promise<T>) {
+  const run = cameraGate.then(fn, fn);
+  cameraGate = run.then(
+    () => undefined,
+    () => undefined,
+  );
+  return run;
 }
 
 export async function ensureCribPasskey() {
@@ -156,45 +243,48 @@ function bindResume() {
   unbindResume = () => document.removeEventListener("visibilitychange", onVis);
 }
 
-async function primeCamera() {
+async function captureCribStream() {
   if (!navigator.mediaDevices?.getUserMedia) {
     throw new Error("This browser cannot use the camera.");
   }
-  const stream = await navigator.mediaDevices.getUserMedia({
-    video: { facingMode: { ideal: state.facing } },
-    audio: false,
-  });
+  try {
+    return await navigator.mediaDevices.getUserMedia(cribMediaConstraints(state.facing, true));
+  } catch (err) {
+    if (!audioDenied(err)) throw err;
+    return await navigator.mediaDevices.getUserMedia(cribMediaConstraints(state.facing, false));
+  }
+}
+
+async function primeCamera() {
+  const stream = await captureCribStream();
   stopStream(stream);
 }
 
 async function openCamera(force = false) {
-  if (!force && state.localStream?.getTracks().some((track) => track.readyState === "live")) {
-    return state.localStream;
-  }
-  if (cameraBusy) return state.localStream;
-  cameraBusy = true;
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({
-      video: {
-        facingMode: { ideal: state.facing },
-        width: { ideal: 1280 },
-        height: { ideal: 720 },
-      },
-      audio: state.mic ? { echoCancellation: true, noiseSuppression: true } : false,
-    });
+  return withCamera(async () => {
+    if (!force && streamHasLive(state.localStream, "video")) {
+      applyMicEnabled(state.localStream, state.mic);
+      return state.localStream;
+    }
     stopStream(state.localStream);
-    emit({ localStream: stream });
-    stream.getTracks().forEach((track) => {
-      track.addEventListener("ended", () => {
-        if (state.role === "crib" && cameraShouldRun(sessions.size)) {
-          void ensureCamera(true).then(() => reofferAll());
-        }
+    emit({ localStream: null });
+    try {
+      const stream = await captureCribStream();
+      applyMicEnabled(stream, state.mic);
+      emit({ localStream: stream });
+      stream.getTracks().forEach((track) => {
+        track.addEventListener("ended", () => {
+          if (state.role === "crib" && cameraShouldRun(sessions.size)) {
+            void ensureCamera(true).then(() => reofferAll());
+          }
+        });
       });
-    });
-    return stream;
-  } finally {
-    cameraBusy = false;
-  }
+      return stream;
+    } catch (err) {
+      emit({ localStream: null });
+      throw err;
+    }
+  });
 }
 
 async function ensureCamera(force = false) {
@@ -217,7 +307,7 @@ async function offerTo(id: string) {
   try {
     stream = await ensureCamera();
   } catch (err) {
-    emit({ error: mediaError(err, "Could not open the camera") });
+    emit({ phase: "error", error: mediaError(err, "Could not open the camera") });
     return;
   }
   if (!stream) return;
@@ -317,7 +407,14 @@ async function answerOffer(msg: PairWire) {
   if (existing) closePeer(existing);
   const session: Session = { id: "crib", name: msg.name || "Crib", live: false, pc };
   sessions.set("crib", session);
+  emit({ remoteStream: null });
   pc.ontrack = (ev) => {
+    clearWatchPictureTimer();
+    const fromPeer = ev.streams[0];
+    if (fromPeer) {
+      emit({ remoteStream: fromPeer, phase: "live", error: "" });
+      return;
+    }
     const tracks = state.remoteStream ? [...state.remoteStream.getTracks()] : [];
     if (!tracks.includes(ev.track)) tracks.push(ev.track);
     emit({ remoteStream: new MediaStream(tracks), phase: "live", error: "" });
@@ -331,6 +428,7 @@ async function answerOffer(msg: PairWire) {
     if (pc.connectionState === "failed") {
       session.live = false;
       emit({ phase: "waiting", error: "Picture dropped. Waiting for the crib phone…" });
+      armWatchPictureTimer();
     }
   };
   try {
@@ -353,7 +451,11 @@ async function onWatchWire(msg: PairWire) {
     case "bye":
       closeAllPeers();
       sessions.clear();
-      emit({ phase: "waiting", remoteStream: null, error: "" });
+      emit({
+        phase: "waiting",
+        remoteStream: null,
+        error: "The crib phone stopped. Leave that screen open, then try Watch again.",
+      });
       return;
     case "hello":
     case "answer":
@@ -366,8 +468,23 @@ async function onWatchWire(msg: PairWire) {
 }
 
 function mediaError(err: unknown, fallback: string) {
-  const denied = err instanceof DOMException && (err.name === "NotAllowedError" || err.name === "NotFoundError");
-  return denied ? "Camera is blocked. Allow the camera, then tap Start camera." : err instanceof Error ? err.message : fallback;
+  if (err instanceof DOMException) {
+    switch (err.name) {
+      case "NotAllowedError":
+        return "Camera is blocked. Allow the camera, then tap Start camera.";
+      case "NotFoundError":
+        return "This phone has no camera.";
+      case "NotReadableError":
+        return "The camera is in use by another app. Close it, then tap Start camera.";
+      case "OverconstrainedError":
+        return "This camera could not start. Flip the camera, or tap Start camera.";
+      case "AbortError":
+        return "The camera stopped before it started. Tap Start camera.";
+      default:
+        return err.message || fallback;
+    }
+  }
+  return err instanceof Error ? err.message : fallback;
 }
 
 export async function startCrib(opts?: { facing?: CameraFacing; mic?: boolean }) {
@@ -463,6 +580,7 @@ export async function startWatch(passkey: string) {
     await mailbox.publish({ k: "hello", name: settings.caregiverName || "Parent" });
     await rememberCribPasskey(code);
     emit({ phase: "waiting", error: "" });
+    armWatchPictureTimer();
   } catch (err) {
     closeMailbox();
     emit({
@@ -485,20 +603,23 @@ export async function setCribFacing(facing: CameraFacing) {
 export async function setCribMic(mic: boolean) {
   if (state.role !== "crib") return;
   emit({ mic });
+  applyMicEnabled(state.localStream, mic);
   if (!cameraShouldRun(sessions.size)) return;
-  await ensureCamera(true);
-  await reofferAll();
+  if (mic && !streamHasLive(state.localStream, "audio")) {
+    await ensureCamera(true);
+    await reofferAll();
+  }
 }
 
 export function stopMedia() {
   if (mailbox && state.role !== "off") void mailbox.publish({ k: "bye" }).catch(() => undefined);
   unbindResume?.();
   unbindResume = null;
+  clearWatchPictureTimer();
   closeAllPeers();
   sessions.clear();
   closeMailbox();
   stopStream(state.localStream);
   starting = false;
-  cameraBusy = false;
   emit({ ...idle });
 }

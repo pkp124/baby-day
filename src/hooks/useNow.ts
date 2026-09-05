@@ -9,11 +9,10 @@ export function useNow(fast: boolean) {
   return now;
 }
 
-export function useWakeLock(active: boolean, strong = false) {
+export function useWakeLock(active: boolean) {
   useEffect(() => {
     if (!active) return;
     let sentinel: WakeLockSentinel | undefined;
-    let video: HTMLVideoElement | undefined;
     const grab = async () => {
       if (!("wakeLock" in navigator)) return;
       try {
@@ -23,19 +22,6 @@ export function useWakeLock(active: boolean, strong = false) {
       }
     };
     void grab();
-    if (strong) {
-      const canvas = document.createElement("canvas");
-      canvas.width = 1;
-      canvas.height = 1;
-      const ctx = canvas.getContext("2d");
-      ctx?.fillRect(0, 0, 1, 1);
-      video = document.createElement("video");
-      video.muted = true;
-      video.playsInline = true;
-      video.loop = true;
-      video.srcObject = canvas.captureStream(1);
-      void video.play().catch(() => undefined);
-    }
     const onVis = () => {
       if (!document.hidden) void grab();
     };
@@ -43,9 +29,6 @@ export function useWakeLock(active: boolean, strong = false) {
     return () => {
       document.removeEventListener("visibilitychange", onVis);
       void sentinel?.release();
-      video?.pause();
-      video?.removeAttribute("src");
-      video?.load();
     };
-  }, [active, strong]);
+  }, [active]);
 }
