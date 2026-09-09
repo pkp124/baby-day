@@ -1,8 +1,13 @@
+import { useState } from "react";
 import type { BreastSide, CareEvent, FeedData, Settings, TempData, VitaminType } from "../lib/types";
 import { bottleMl, feedSeconds, latestInRange, mostRecent, nextBreastSide, vitaminLabel, type DayTotals } from "../lib/domain";
 import { formatClock, formatDuration, formatRelative, fromDatetimeLocalValue, minutesAgoIso, toDatetimeLocalValue } from "../lib/time";
 import { formatMl, formatTemp, formatWeight } from "../lib/units";
 import { describeEvent } from "../lib/summary";
+
+function whenChipMatch(minutesAgo: number) {
+  return [0, 10, 20, 60].find((n) => Math.abs(minutesAgo - n) <= 1);
+}
 
 export function WhenField({
   timezone,
@@ -16,7 +21,9 @@ export function WhenField({
   label?: string;
 }) {
   const minutesAgo = Math.round((Date.now() - new Date(valueIso).getTime()) / 60_000);
-  const chipMatch = [0, 10, 20, 60].find((n) => Math.abs(minutesAgo - n) <= 1);
+  const chipMatch = whenChipMatch(minutesAgo);
+  const [exact, setExact] = useState(chipMatch === undefined);
+
   return (
     <>
       <div className="timechips">
@@ -24,25 +31,33 @@ export function WhenField({
           <button
             key={n}
             type="button"
-            className={chipMatch === n ? "on" : ""}
-            onClick={() => onChangeIso(minutesAgoIso(n))}
+            className={chipMatch === n && !exact ? "on" : ""}
+            onClick={() => {
+              onChangeIso(minutesAgoIso(n));
+              setExact(false);
+            }}
           >
             {n === 0 ? "Now" : n === 60 ? "1h ago" : `${n}m ago`}
           </button>
         ))}
+        <button type="button" className={exact ? "on" : ""} onClick={() => setExact(true)}>
+          Exact
+        </button>
       </div>
-      <label className="field">
-        {label}
-        <input
-          type="datetime-local"
-          step={60}
-          value={toDatetimeLocalValue(valueIso, timezone)}
-          onChange={(e) => {
-            if (!e.target.value) return;
-            onChangeIso(fromDatetimeLocalValue(e.target.value, timezone));
-          }}
-        />
-      </label>
+      {exact ? (
+        <label className="field">
+          {label}
+          <input
+            type="datetime-local"
+            step={60}
+            value={toDatetimeLocalValue(valueIso, timezone)}
+            onChange={(e) => {
+              if (!e.target.value) return;
+              onChangeIso(fromDatetimeLocalValue(e.target.value, timezone));
+            }}
+          />
+        </label>
+      ) : null}
     </>
   );
 }
@@ -89,10 +104,18 @@ export function Glance({
   events,
   settings,
   now,
+  onFeed,
+  onPump,
+  onDiaper,
+  onSleep,
 }: {
   events: CareEvent[];
   settings: Settings;
   now: Date;
+  onFeed: () => void;
+  onPump: () => void;
+  onDiaper: () => void;
+  onSleep: () => void;
 }) {
   const feed = mostRecent(events, "feed");
   const pump = mostRecent(events, "pump");
@@ -110,22 +133,22 @@ export function Glance({
 
   return (
     <div className="glance">
-      <div className="cell">
+      <button className="cell" type="button" onClick={onFeed} aria-label="Log a feed">
         <div className="kicker">Last feed</div>
         <strong>{sinceLabel(feed, now, "none yet")}</strong>
         <div className="faint">{feedHint}</div>
-      </div>
-      <div className="cell">
+      </button>
+      <button className="cell" type="button" onClick={onPump} aria-label="Log a pump">
         <div className="kicker">Last pump</div>
         <strong>{sinceLabel(pump, now, "none yet")}</strong>
         <div className="faint">{pumpHint}</div>
-      </div>
-      <div className="cell">
+      </button>
+      <button className="cell" type="button" onClick={onDiaper} aria-label="Log a diaper">
         <div className="kicker">Last diaper</div>
         <strong>{sinceLabel(diaper, now, "none yet")}</strong>
         <div className="faint">{diaperHint}</div>
-      </div>
-      <div className="cell">
+      </button>
+      <button className="cell" type="button" onClick={onSleep} aria-label={sleep && !sleep.endedAt ? "Edit sleep" : "Log a nap"}>
         <div className="kicker">{sleep && !sleep.endedAt ? "Sleeping" : "Awake"}</div>
         <strong>
           {sleep && !sleep.endedAt
@@ -135,7 +158,7 @@ export function Glance({
               : "—"}
         </strong>
         <div className="faint">{sleepHint}</div>
-      </div>
+      </button>
     </div>
   );
 }

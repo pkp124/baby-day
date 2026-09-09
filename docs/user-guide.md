@@ -26,15 +26,15 @@ Home → **Feed** → Start left or right. The timer stays on the home screen. S
 
 ### A feed that already happened
 
-Feed → **Log times on each breast** if you remember minutes. For a bottle, pick expressed, formula, or mixed and enter the amount. Every sheet has **Now / 10m / 20m / 1h** chips and a clock picker so the timestamp is the real one, not “whenever you found the phone.”
+Feed → **Log times on each breast** if you remember minutes. For a bottle, pick expressed, formula, or mixed and enter the amount — sheets remember the last amount you used. **Same as last** repeats the previous bottle in one tap. Time chips are **Now / 10m / 20m / 1h**; tap **Exact** only if you need the clock picker.
 
 ### Sleep
 
-Sleep opens a sheet: start now, or save a finished nap with started and woke times. If a sleep timer is already running, the home Sleep button ends it. A leftover timer older than three hours shows a warning.
+Home **Sleep** starts a timer immediately. Tap it again to wake. To log a nap that already finished, tap the **Awake** glance card and save started/woke times (it prefills the last nap length). A leftover timer older than three hours shows a warning.
 
 ### Diaper, pump, temp, weight, note
 
-One sheet each. Pump is left and right volume. Tap a timeline row to edit time, notes, or delete (with undo).
+One sheet each. Pump, bottle, weight, and temperature start from the last values you logged. Tap a glance card (last feed / pump / diaper / sleep) to open that log. Tap a timeline row to edit time, amounts, notes, or delete. Every new log offers **Undo** on the toast.
 
 ### Vitamin D and K
 

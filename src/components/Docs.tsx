@@ -73,18 +73,21 @@ export function GuidePage({ onTech }: { onTech: () => void }) {
         <h3>A feed that already happened</h3>
         <p>
           Feed → <strong>Log times on each breast</strong> if you remember minutes. For a bottle, pick expressed,
-          formula, or mixed and enter the amount. Every sheet has <strong>Now / 10m / 20m / 1h</strong> chips and a
-          clock picker so the timestamp is the real one, not “whenever you found the phone.”
+          formula, or mixed — amounts start from what you logged last. <strong>Same as last</strong> repeats the previous
+          bottle in one tap. Time chips are Now / 10m / 20m / 1h; tap <strong>Exact</strong> only if you need the clock
+          picker.
         </p>
         <h3>Sleep</h3>
         <p>
-          Sleep opens a sheet: start now, or save a finished nap with started and woke times. If a sleep timer is
-          already running, the home Sleep button ends it. A leftover timer older than three hours shows a warning.
+          Home <strong>Sleep</strong> starts a timer immediately. Tap it again to wake. To log a nap that already
+          finished, tap the <strong>Awake</strong> glance card and save started/woke times (it prefills the last nap
+          length). A leftover timer older than three hours shows a warning.
         </p>
         <h3>Diaper, pump, temp, weight, note</h3>
         <p>
-          One sheet each. Pump is left and right volume. Temp and weight follow the units in Settings (ml/oz, kg/lb,
-          °C/°F). Storage is always millilitres, grams, and Celsius underneath.
+          One sheet each. Pump, bottle, weight, and temperature start from the last values you logged. Tap a glance
+          card (last feed / pump / diaper / sleep) to open that log. Temp and weight follow the units in Settings
+          (ml/oz, kg/lb, °C/°F). Storage is always millilitres, grams, and Celsius underneath.
         </p>
         <h3>Vitamin D and K</h3>
         <p>
@@ -93,7 +96,8 @@ export function GuidePage({ onTech }: { onTech: () => void }) {
         </p>
         <h3>Fix a mistake</h3>
         <p>
-          Tap a timeline row. Change the time, breast minutes, notes, or delete. Delete offers Undo for a few seconds.
+          Every new log offers Undo on the toast. Tap a timeline row to change the time, amounts, breast minutes, diaper
+          kind, notes, or delete.
         </p>
       </section>
 

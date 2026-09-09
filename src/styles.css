@@ -199,6 +199,9 @@ h1, h2, h3 { font-family: var(--display); font-weight: 640; margin: 0; }
   text-align: left;
   min-height: 86px;
 }
+.glance button.cell {
+  width: 100%;
+}
 .kicker { color: var(--faint); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.06em; }
 .glance strong { display: block; margin-top: 6px; font-size: 0.98rem; }
 
@@ -360,6 +363,10 @@ h1, h2, h3 { font-family: var(--display); font-weight: 640; margin: 0; }
 }
 .sheet h2 { font-size: 1.6rem; margin-bottom: 12px; }
 .choices { display: grid; gap: 8px; }
+.choices.sides {
+  grid-template-columns: 1fr 1fr;
+  margin-bottom: 8px;
+}
 .choice {
   min-height: 64px;
   border-radius: 18px;
@@ -369,6 +376,13 @@ h1, h2, h3 { font-family: var(--display); font-weight: 640; margin: 0; }
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+.choice.start {
+  min-height: 76px;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 2px;
 }
 .choice.hl { box-shadow: inset 0 0 0 2px var(--feed); }
 .field {
