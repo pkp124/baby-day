@@ -16,6 +16,7 @@ import {
   TempSheet,
   WeightSheet,
 } from "./components/Sheets";
+import { VoiceSheet, useVoiceListen } from "./components/VoiceLog";
 import { CribWatchPage } from "./components/CribWatch";
 import { CameraPage } from "./components/Camera";
 import { GuidePage, TechPage } from "./components/Docs";
@@ -60,6 +61,8 @@ import {
 import { syncLan, useLan } from "./lib/lan";
 import { startCrib } from "./lib/lanMedia";
 import { isLanPasskeyFresh } from "./lib/lanRemember";
+import { applyVoiceIntent } from "./lib/voiceApply";
+import { parseVoiceLog } from "./lib/voiceIntent";
 import type { AppPage } from "./lib/pages";
 import type { CareEvent, FeedData, FeedMethod } from "./lib/types";
 
@@ -73,6 +76,7 @@ type SheetKind =
   | "sleep"
   | "note"
   | "event"
+  | "voice"
   | null;
 
 export default function App() {
@@ -82,6 +86,7 @@ export default function App() {
   const active = activeSession(store.events);
   const now = useNow(Boolean(active));
   useWakeLock(Boolean(active));
+  const voice = useVoiceListen();
   const [sheet, setSheet] = useState<SheetKind>(null);
   const [bottleMethod, setBottleMethod] = useState<Extract<FeedMethod, "expressed" | "formula" | "mixed">>("formula");
   const [editing, setEditing] = useState<CareEvent | null>(null);
@@ -178,6 +183,30 @@ export default function App() {
   const lastPump = lastPumpMl(store.events);
   const volumeUnit = store.settings.volumeUnit;
   const lastBottleAmount = lastBottleMlForMethod(store.events, bottleMethod);
+  const commitVoice = (intent: ReturnType<typeof parseVoiceLog>) => {
+    void applyVoiceIntent(intent, {
+      active,
+      settings: store.settings,
+      lastBottle,
+    }).then((result) => {
+      if (!result.ok) {
+        store.flash(result.message);
+        return;
+      }
+      setSheet(null);
+      voice.reset();
+      store.flash(result.message, result.eventId ? () => void removeEvent(result.eventId as string) : undefined);
+    });
+  };
+  const startVoice = () => {
+    voice.reset();
+    setSheet("voice");
+    voice.start((spoken) => {
+      const intent = parseVoiceLog(spoken, next);
+      if (intent.type === "unknown") return;
+      commitVoice(intent);
+    });
+  };
   const syncClass =
     lan.phase === "connected" ? "" : store.sync.status === "error" ? "bad" : store.sync.pending > 0 || store.sync.status === "local" ? "warn" : "";
   const syncLabel =
@@ -277,6 +306,10 @@ export default function App() {
           />
 
           <div className="actions">
+            <button className="action wide voice" type="button" onClick={startVoice}>
+              <div className="label">Speak</div>
+              <div className="hint">wet diaper · start left · formula 90</div>
+            </button>
             <button className="action wide feed" type="button" onClick={() => setSheet("feed")}>
               <div className="label">Feed</div>
               <div className="hint">Start {next} · bottle or mixed</div>
@@ -356,6 +389,7 @@ export default function App() {
       {sheet && (
         <Modal
           onClose={() => {
+            voice.stop();
             setSheet(null);
             setEditing(null);
           }}
@@ -502,6 +536,25 @@ export default function App() {
                 setSheet(null);
                 store.flash("Note saved", () => void removeEvent(event.id));
               }}
+            />
+          )}
+          {sheet === "voice" && (
+            <VoiceSheet
+              nextSide={next}
+              phase={voice.phase}
+              text={voice.text}
+              error={voice.error}
+              canListen={voice.canListen}
+              onText={voice.setText}
+              onListen={() =>
+                voice.start((spoken) => {
+                  const intent = parseVoiceLog(spoken, next);
+                  if (intent.type === "unknown") return;
+                  commitVoice(intent);
+                })
+              }
+              onStop={voice.stop}
+              onSubmit={commitVoice}
             />
           )}
           {sheet === "event" && editing && (
