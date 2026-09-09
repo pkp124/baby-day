@@ -519,12 +519,22 @@ export default function App() {
       )}
 
       {store.toast && (
-        <div className="toast">
-          <span>{store.toast.message}</span>
-          {store.toast.undo && (
-            <button type="button" onClick={() => { store.toast?.undo?.(); store.setToast(null); }}>
-              Undo
+        <div className="toast" role="status">
+          {store.toast.undo ? (
+            <button
+              type="button"
+              className="toast-undo"
+              aria-label={`Undo ${store.toast.message}`}
+              onClick={() => {
+                store.toast?.undo?.();
+                store.setToast(null);
+              }}
+            >
+              <span>{store.toast.message}</span>
+              <strong>Undo</strong>
             </button>
+          ) : (
+            <span>{store.toast.message}</span>
           )}
         </div>
       )}

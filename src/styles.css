@@ -437,13 +437,31 @@ h1, h2, h3 { font-family: var(--display); font-weight: 640; margin: 0; }
   transform: translateX(-50%);
   background: var(--ink);
   color: #1c1712;
-  padding: 12px 14px;
+  padding: 4px 6px 4px 16px;
   border-radius: 16px;
+  z-index: 18;
+  box-shadow: var(--shadow);
+  min-width: min(280px, calc(100% - 32px));
+}
+.toast-undo {
   display: flex;
   gap: 12px;
   align-items: center;
-  z-index: 30;
-  box-shadow: var(--shadow);
+  justify-content: space-between;
+  width: 100%;
+  min-height: 48px;
+  padding: 0 10px 0 0;
+  color: inherit;
+  font-weight: 600;
+}
+.toast-undo strong {
+  min-height: 36px;
+  padding: 0 12px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  background: #1c1712;
+  color: var(--ink);
 }
 
 .onboard {

@@ -6,7 +6,8 @@ import { formatMl, formatTemp, formatWeight } from "../lib/units";
 import { describeEvent } from "../lib/summary";
 
 function whenChipMatch(minutesAgo: number) {
-  return [0, 10, 20, 60].find((n) => Math.abs(minutesAgo - n) <= 1);
+  if (Math.abs(minutesAgo) <= 2) return 0;
+  return [10, 20, 60].find((n) => Math.abs(minutesAgo - n) <= 2);
 }
 
 export function WhenField({
