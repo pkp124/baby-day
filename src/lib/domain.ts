@@ -1,4 +1,4 @@
-import type { BreastSide, CareEvent, FeedData, PumpData, VitaminType } from "./types";
+import type { BreastSide, CareEvent, FeedData, FeedMethod, PumpData, TempData, VitaminType, WeightData } from "./types";
 import { eventDurationSeconds } from "./time";
 
 export function liveEvents(events: CareEvent[]) {
@@ -84,11 +84,73 @@ export function nextBreastSide(events: CareEvent[]): BreastSide {
   return "left";
 }
 
+function newestFirst(events: CareEvent[]) {
+  return liveEvents(events).slice().sort((a, b) => (a.time < b.time ? 1 : -1));
+}
+
 /** Last finished or in-progress event of a type (for "since last feed"). */
 export function mostRecent(events: CareEvent[], type: CareEvent["type"]) {
-  return liveEvents(events)
-    .filter((e) => e.type === type)
-    .sort((a, b) => (a.time < b.time ? 1 : -1))[0];
+  return newestFirst(events).find((e) => e.type === type);
+}
+
+const BOTTLE_METHODS = new Set<FeedMethod>(["formula", "expressed", "mixed"]);
+
+export function lastBottleFeed(events: CareEvent[]) {
+  return newestFirst(events).find((e) => e.type === "feed" && BOTTLE_METHODS.has((e.data as FeedData).method));
+}
+
+export function lastBottleMlForMethod(events: CareEvent[], method: Extract<FeedMethod, "expressed" | "formula" | "mixed">) {
+  const match = newestFirst(events).find((e) => e.type === "feed" && (e.data as FeedData).method === method);
+  if (!match) return undefined;
+  const ml = bottleMl(match.data as FeedData);
+  return ml > 0 ? ml : undefined;
+}
+
+export function lastPumpMl(events: CareEvent[]) {
+  const last = mostRecent(events, "pump");
+  if (!last) return undefined;
+  const data = last.data as PumpData;
+  const leftMl = data.leftMl ?? 0;
+  const rightMl = data.rightMl ?? 0;
+  if (leftMl <= 0 && rightMl <= 0 && !(data.volumeMl && data.volumeMl > 0)) return undefined;
+  if (leftMl <= 0 && rightMl <= 0) {
+    const half = (data.volumeMl ?? 0) / 2;
+    return { leftMl: half, rightMl: half };
+  }
+  return { leftMl, rightMl };
+}
+
+export function lastWeightGrams(events: CareEvent[]) {
+  const last = mostRecent(events, "weight");
+  if (!last) return undefined;
+  return (last.data as WeightData).grams;
+}
+
+export function lastTempCelsius(events: CareEvent[]) {
+  const last = mostRecent(events, "temp");
+  if (!last) return undefined;
+  return (last.data as TempData).celsius;
+}
+
+export function lastBreastMinutes(events: CareEvent[]) {
+  const last = newestFirst(events).find((e) => {
+    if (e.type !== "feed") return false;
+    const method = (e.data as FeedData).method;
+    return method === "breast" || method === "mixed";
+  });
+  if (!last) return undefined;
+  const data = last.data as FeedData;
+  const left = Math.round((data.leftSeconds ?? 0) / 60);
+  const right = Math.round((data.rightSeconds ?? 0) / 60);
+  if (left <= 0 && right <= 0) return undefined;
+  return { left, right, startedOn: data.startedOn ?? "left" };
+}
+
+export function lastFinishedSleepMinutes(events: CareEvent[]) {
+  const last = newestFirst(events).find((e) => e.type === "sleep" && e.endedAt);
+  if (!last?.endedAt) return undefined;
+  const minutes = Math.round((new Date(last.endedAt).getTime() - new Date(last.time).getTime()) / 60_000);
+  return minutes > 0 ? minutes : undefined;
 }
 
 export function inRange(events: CareEvent[], start: Date, end: Date) {

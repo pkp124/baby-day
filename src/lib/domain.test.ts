@@ -1,6 +1,16 @@
 import { describe, expect, it } from "vitest";
-import { latestInRange, vitaminLabel } from "./domain";
-import type { CareEvent } from "./types";
+import {
+  lastBottleFeed,
+  lastBottleMlForMethod,
+  lastBreastMinutes,
+  lastFinishedSleepMinutes,
+  lastPumpMl,
+  lastTempCelsius,
+  lastWeightGrams,
+  latestInRange,
+  vitaminLabel,
+} from "./domain";
+import type { CareEvent, FeedData } from "./types";
 
 function event(partial: Partial<CareEvent> & Pick<CareEvent, "id" | "type" | "time">): CareEvent {
   return {
@@ -44,5 +54,73 @@ describe("vitamin cards", () => {
       event({ id: "gone", type: "vitaminD", time: "2026-08-29T20:00:00.000Z", deletedAt: "2026-08-29T20:01:00.000Z" }),
     ];
     expect(latestInRange(events, "vitaminD", start, end)?.id).toBe("second");
+  });
+});
+
+describe("last logged values", () => {
+  it("finds the newest bottle and its millilitres for that method", () => {
+    const events = [
+      event({
+        id: "old",
+        type: "feed",
+        time: "2026-08-29T08:00:00.000Z",
+        data: { method: "formula", volumeMl: 60, formulaMl: 60 } satisfies FeedData,
+      }),
+      event({
+        id: "new",
+        type: "feed",
+        time: "2026-08-29T12:00:00.000Z",
+        data: { method: "formula", volumeMl: 90, formulaMl: 90 } satisfies FeedData,
+      }),
+      event({
+        id: "breast",
+        type: "feed",
+        time: "2026-08-29T13:00:00.000Z",
+        data: { method: "breast", startedOn: "left", leftSeconds: 600 } satisfies FeedData,
+      }),
+    ];
+    expect(lastBottleFeed(events)?.id).toBe("new");
+    expect(lastBottleMlForMethod(events, "formula")).toBe(90);
+    expect(lastBottleMlForMethod(events, "expressed")).toBeUndefined();
+  });
+
+  it("prefills pump, weight, temp, breast minutes, and last nap length", () => {
+    const events = [
+      event({ id: "pump", type: "pump", time: "2026-08-29T09:00:00.000Z", data: { leftMl: 40, rightMl: 50 } }),
+      event({ id: "weight", type: "weight", time: "2026-08-29T10:00:00.000Z", data: { grams: 4200 } }),
+      event({ id: "temp", type: "temp", time: "2026-08-29T11:00:00.000Z", data: { celsius: 37.4 } }),
+      event({
+        id: "breast",
+        type: "feed",
+        time: "2026-08-29T12:00:00.000Z",
+        data: { method: "breast", startedOn: "right", leftSeconds: 480, rightSeconds: 720 } satisfies FeedData,
+      }),
+      event({
+        id: "nap",
+        type: "sleep",
+        time: "2026-08-29T14:00:00.000Z",
+        endedAt: "2026-08-29T14:35:00.000Z",
+      }),
+    ];
+    expect(lastPumpMl(events)).toEqual({ leftMl: 40, rightMl: 50 });
+    expect(lastWeightGrams(events)).toBe(4200);
+    expect(lastTempCelsius(events)).toBe(37.4);
+    expect(lastBreastMinutes(events)).toEqual({ left: 8, right: 12, startedOn: "right" });
+    expect(lastFinishedSleepMinutes(events)).toBe(35);
+  });
+
+  it("ignores deleted events and empty pump rows", () => {
+    const events = [
+      event({
+        id: "gone",
+        type: "feed",
+        time: "2026-08-29T12:00:00.000Z",
+        deletedAt: "2026-08-29T12:01:00.000Z",
+        data: { method: "formula", volumeMl: 120, formulaMl: 120 } satisfies FeedData,
+      }),
+      event({ id: "empty-pump", type: "pump", time: "2026-08-29T13:00:00.000Z", data: { leftMl: 0, rightMl: 0 } }),
+    ];
+    expect(lastBottleFeed(events)).toBeUndefined();
+    expect(lastPumpMl(events)).toBeUndefined();
   });
 });

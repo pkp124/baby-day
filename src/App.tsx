@@ -16,14 +16,30 @@ import {
   TempSheet,
   WeightSheet,
 } from "./components/Sheets";
+import { VoiceSheet, useVoiceListen } from "./components/VoiceLog";
 import { CribWatchPage } from "./components/CribWatch";
 import { CameraPage } from "./components/Camera";
 import { GuidePage, TechPage } from "./components/Docs";
 import { Dock } from "./components/Dock";
 import { SettingsPage } from "./components/Settings";
-import { activeSession, dayTotals, feedSeconds, fridgeEstimateMl, nextBreastSide, vitaminLabel } from "./lib/domain";
+import {
+  activeSession,
+  bottleMl,
+  dayTotals,
+  feedSeconds,
+  fridgeEstimateMl,
+  lastBottleFeed,
+  lastBottleMlForMethod,
+  lastBreastMinutes,
+  lastFinishedSleepMinutes,
+  lastPumpMl,
+  lastTempCelsius,
+  lastWeightGrams,
+  nextBreastSide,
+  vitaminLabel,
+} from "./lib/domain";
 import { careDayFor, formatCareDayLabel, formatDuration, formatDurationClock } from "./lib/time";
-import { displayToMl } from "./lib/units";
+import { displayToMl, mlToDisplay } from "./lib/units";
 import {
   addBottleToFeed,
   endTimedEvent,
@@ -45,6 +61,8 @@ import {
 import { syncLan, useLan } from "./lib/lan";
 import { startCrib } from "./lib/lanMedia";
 import { isLanPasskeyFresh } from "./lib/lanRemember";
+import { applyVoiceIntent } from "./lib/voiceApply";
+import { parseVoiceLog } from "./lib/voiceIntent";
 import type { AppPage } from "./lib/pages";
 import type { CareEvent, FeedData, FeedMethod } from "./lib/types";
 
@@ -58,6 +76,7 @@ type SheetKind =
   | "sleep"
   | "note"
   | "event"
+  | "voice"
   | null;
 
 export default function App() {
@@ -67,6 +86,7 @@ export default function App() {
   const active = activeSession(store.events);
   const now = useNow(Boolean(active));
   useWakeLock(Boolean(active));
+  const voice = useVoiceListen();
   const [sheet, setSheet] = useState<SheetKind>(null);
   const [bottleMethod, setBottleMethod] = useState<Extract<FeedMethod, "expressed" | "formula" | "mixed">>("formula");
   const [editing, setEditing] = useState<CareEvent | null>(null);
@@ -158,6 +178,35 @@ export default function App() {
   const totals = dayTotals(store.events, day.start, day.end, now);
   const fridgeMl = fridgeEstimateMl(store.events);
   const next = nextBreastSide(store.events);
+  const lastBottle = lastBottleFeed(store.events);
+  const lastBottleData = lastBottle?.type === "feed" ? (lastBottle.data as FeedData) : null;
+  const lastPump = lastPumpMl(store.events);
+  const volumeUnit = store.settings.volumeUnit;
+  const lastBottleAmount = lastBottleMlForMethod(store.events, bottleMethod);
+  const commitVoice = (intent: ReturnType<typeof parseVoiceLog>) => {
+    void applyVoiceIntent(intent, {
+      active,
+      settings: store.settings,
+      lastBottle,
+    }).then((result) => {
+      if (!result.ok) {
+        store.flash(result.message);
+        return;
+      }
+      setSheet(null);
+      voice.reset();
+      store.flash(result.message, result.eventId ? () => void removeEvent(result.eventId as string) : undefined);
+    });
+  };
+  const startVoice = () => {
+    voice.reset();
+    setSheet("voice");
+    voice.start((spoken) => {
+      const intent = parseVoiceLog(spoken, next);
+      if (intent.type === "unknown") return;
+      commitVoice(intent);
+    });
+  };
   const syncClass =
     lan.phase === "connected" ? "" : store.sync.status === "error" ? "bad" : store.sync.pending > 0 || store.sync.status === "local" ? "warn" : "";
   const syncLabel =
@@ -223,7 +272,22 @@ export default function App() {
             />
           )}
 
-          <Glance events={store.events} settings={store.settings} now={now} />
+          <Glance
+            events={store.events}
+            settings={store.settings}
+            now={now}
+            onFeed={() => setSheet("feed")}
+            onPump={() => setSheet("pump")}
+            onDiaper={() => setSheet("diaper")}
+            onSleep={() => {
+              if (active?.type === "sleep") {
+                setEditing(active);
+                setSheet("event");
+              } else {
+                setSheet("sleep");
+              }
+            }}
+          />
 
           <VitaminCards
             events={store.events}
@@ -242,6 +306,10 @@ export default function App() {
           />
 
           <div className="actions">
+            <button className="action wide voice" type="button" onClick={startVoice}>
+              <div className="label">Speak</div>
+              <div className="hint">wet diaper · start left · formula 90</div>
+            </button>
             <button className="action wide feed" type="button" onClick={() => setSheet("feed")}>
               <div className="label">Feed</div>
               <div className="hint">Start {next} · bottle or mixed</div>
@@ -250,13 +318,17 @@ export default function App() {
               className="action sleep"
               type="button"
               onClick={() => {
-                if (active?.type === "sleep") void endTimedEvent(active.id);
-                else if (active) store.flash("End the feed first");
-                else setSheet("sleep");
+                if (active?.type === "sleep") {
+                  void endTimedEvent(active.id).then(() => store.flash("Saved"));
+                } else if (active) {
+                  store.flash("End the feed first");
+                } else {
+                  void startSleep().then((event) => store.flash("Sleeping", () => void removeEvent(event.id)));
+                }
               }}
             >
               <div className="label">{active?.type === "sleep" ? "End sleep" : "Sleep"}</div>
-              <div className="hint">{active?.type === "sleep" ? "tap to wake" : "start or log times"}</div>
+              <div className="hint">{active?.type === "sleep" ? "tap to wake" : "tap to start"}</div>
             </button>
             <button className="action" type="button" onClick={() => setSheet("diaper")}>
               <div className="label">Diaper</div>
@@ -317,6 +389,7 @@ export default function App() {
       {sheet && (
         <Modal
           onClose={() => {
+            voice.stop();
             setSheet(null);
             setEditing(null);
           }}
@@ -325,42 +398,65 @@ export default function App() {
             <FeedSheet
               next={next}
               timezone={store.settings.timezone}
+              unit={volumeUnit}
+              lastBottle={
+                lastBottleData && lastBottleData.method !== "breast"
+                  ? { method: lastBottleData.method, ml: bottleMl(lastBottleData) }
+                  : undefined
+              }
+              lastBreast={lastBreastMinutes(store.events)}
               onBreast={async (side, iso) => {
                 if (active) await endTimedEvent(active.id);
-                await startBreastFeed(side, { iso });
+                const event = await startBreastFeed(side, { iso });
                 setSheet(null);
+                store.flash("Feed started", () => void removeEvent(event.id));
               }}
               onLogBreast={async ({ startedOn, leftSeconds, rightSeconds, iso }) => {
-                await logBreastFeed({ startedOn, leftSeconds, rightSeconds, when: { iso } });
+                const event = await logBreastFeed({ startedOn, leftSeconds, rightSeconds, when: { iso } });
                 setSheet(null);
-                store.flash("Feed saved");
+                store.flash("Feed saved", () => void removeEvent(event.id));
               }}
               onPickBottle={(method) => {
                 setBottleMethod(method);
                 setSheet("bottle");
+              }}
+              onRepeatLast={async (iso) => {
+                if (!lastBottleData || lastBottleData.method === "breast") return;
+                const event = await logBottleFeed({
+                  method: lastBottleData.method,
+                  volumeMl: lastBottleData.volumeMl,
+                  formulaMl: lastBottleData.formulaMl,
+                  expressedMl: lastBottleData.expressedMl,
+                  when: { iso },
+                });
+                setSheet(null);
+                store.flash("Feed saved", () => void removeEvent(event.id));
               }}
             />
           )}
           {sheet === "bottle" && (
             <BottleSheet
               method={bottleMethod}
-              unit={store.settings.volumeUnit}
+              unit={volumeUnit}
               timezone={store.settings.timezone}
+              lastAmount={lastBottleAmount != null ? mlToDisplay(lastBottleAmount, volumeUnit) : undefined}
               onSave={async (amount, iso) => {
-                const ml = displayToMl(amount, store.settings.volumeUnit);
+                const ml = displayToMl(amount, volumeUnit);
                 if (active?.type === "feed" && bottleMethod === "mixed") {
                   await addBottleToFeed(active.id, { formulaMl: ml, method: "mixed" });
-                } else {
-                  await logBottleFeed({
-                    method: bottleMethod,
-                    volumeMl: ml,
-                    formulaMl: bottleMethod === "formula" || bottleMethod === "mixed" ? ml : undefined,
-                    expressedMl: bottleMethod === "expressed" ? ml : undefined,
-                    when: { iso },
-                  });
+                  setSheet(null);
+                  store.flash("Feed saved");
+                  return;
                 }
+                const event = await logBottleFeed({
+                  method: bottleMethod,
+                  volumeMl: ml,
+                  formulaMl: bottleMethod === "formula" || bottleMethod === "mixed" ? ml : undefined,
+                  expressedMl: bottleMethod === "expressed" ? ml : undefined,
+                  when: { iso },
+                });
                 setSheet(null);
-                store.flash("Feed saved");
+                store.flash("Feed saved", () => void removeEvent(event.id));
               }}
             />
           )}
@@ -368,24 +464,26 @@ export default function App() {
             <DiaperSheet
               timezone={store.settings.timezone}
               onSave={async (kind, iso) => {
-                await logDiaper(kind, { iso });
+                const event = await logDiaper(kind, { iso });
                 setSheet(null);
-                store.flash("Diaper saved");
+                store.flash("Diaper saved", () => void removeEvent(event.id));
               }}
             />
           )}
           {sheet === "pump" && (
             <PumpSheet
-              unit={store.settings.volumeUnit}
+              unit={volumeUnit}
               timezone={store.settings.timezone}
+              lastLeft={lastPump ? mlToDisplay(lastPump.leftMl, volumeUnit) : undefined}
+              lastRight={lastPump ? mlToDisplay(lastPump.rightMl, volumeUnit) : undefined}
               onSave={async (left, right, iso) => {
-                await logPump({
-                  leftMl: displayToMl(left, store.settings.volumeUnit),
-                  rightMl: displayToMl(right, store.settings.volumeUnit),
+                const event = await logPump({
+                  leftMl: displayToMl(left, volumeUnit),
+                  rightMl: displayToMl(right, volumeUnit),
                   when: { iso },
                 });
                 setSheet(null);
-                store.flash("Pump saved");
+                store.flash("Pump saved", () => void removeEvent(event.id));
               }}
             />
           )}
@@ -393,10 +491,11 @@ export default function App() {
             <WeightSheet
               unit={store.settings.weightUnit}
               timezone={store.settings.timezone}
+              lastGrams={lastWeightGrams(store.events)}
               onSave={async (grams, iso) => {
-                await logWeight(grams, { iso });
+                const event = await logWeight(grams, { iso });
                 setSheet(null);
-                store.flash("Weight saved");
+                store.flash("Weight saved", () => void removeEvent(event.id));
               }}
             />
           )}
@@ -404,24 +503,28 @@ export default function App() {
             <TempSheet
               unit={store.settings.tempUnit}
               timezone={store.settings.timezone}
+              lastCelsius={lastTempCelsius(store.events)}
               onSave={async (celsius, iso) => {
-                await logTemperature(celsius, { iso });
+                const event = await logTemperature(celsius, { iso });
                 setSheet(null);
-                store.flash("Temperature saved");
+                store.flash("Temperature saved", () => void removeEvent(event.id));
               }}
             />
           )}
           {sheet === "sleep" && (
             <SleepSheet
               timezone={store.settings.timezone}
+              past
+              lastNapMinutes={lastFinishedSleepMinutes(store.events)}
               onStart={async (iso) => {
-                await startSleep({ iso });
+                const event = await startSleep({ iso });
                 setSheet(null);
+                store.flash("Sleeping", () => void removeEvent(event.id));
               }}
               onLog={async (startIso, endIso) => {
-                await logSleep({ start: { iso: startIso }, endedAt: endIso });
+                const event = await logSleep({ start: { iso: startIso }, endedAt: endIso });
                 setSheet(null);
-                store.flash("Sleep saved");
+                store.flash("Sleep saved", () => void removeEvent(event.id));
               }}
             />
           )}
@@ -429,10 +532,29 @@ export default function App() {
             <NoteSheet
               timezone={store.settings.timezone}
               onSave={async (text, iso) => {
-                await logNote(text, { iso });
+                const event = await logNote(text, { iso });
                 setSheet(null);
-                store.flash("Note saved");
+                store.flash("Note saved", () => void removeEvent(event.id));
               }}
+            />
+          )}
+          {sheet === "voice" && (
+            <VoiceSheet
+              nextSide={next}
+              phase={voice.phase}
+              text={voice.text}
+              error={voice.error}
+              canListen={voice.canListen}
+              onText={voice.setText}
+              onListen={() =>
+                voice.start((spoken) => {
+                  const intent = parseVoiceLog(spoken, next);
+                  if (intent.type === "unknown") return;
+                  commitVoice(intent);
+                })
+              }
+              onStop={voice.stop}
+              onSubmit={commitVoice}
             />
           )}
           {sheet === "event" && editing && (
@@ -450,12 +572,22 @@ export default function App() {
       )}
 
       {store.toast && (
-        <div className="toast">
-          <span>{store.toast.message}</span>
-          {store.toast.undo && (
-            <button type="button" onClick={() => { store.toast?.undo?.(); store.setToast(null); }}>
-              Undo
+        <div className="toast" role="status">
+          {store.toast.undo ? (
+            <button
+              type="button"
+              className="toast-undo"
+              aria-label={`Undo ${store.toast.message}`}
+              onClick={() => {
+                store.toast?.undo?.();
+                store.setToast(null);
+              }}
+            >
+              <span>{store.toast.message}</span>
+              <strong>Undo</strong>
             </button>
+          ) : (
+            <span>{store.toast.message}</span>
           )}
         </div>
       )}

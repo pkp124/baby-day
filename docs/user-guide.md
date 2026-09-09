@@ -26,15 +26,19 @@ Home → **Feed** → Start left or right. The timer stays on the home screen. S
 
 ### A feed that already happened
 
-Feed → **Log times on each breast** if you remember minutes. For a bottle, pick expressed, formula, or mixed and enter the amount. Every sheet has **Now / 10m / 20m / 1h** chips and a clock picker so the timestamp is the real one, not “whenever you found the phone.”
+Feed → **Log times on each breast** if you remember minutes. For a bottle, pick expressed, formula, or mixed and enter the amount — sheets remember the last amount you used. **Same as last** repeats the previous bottle in one tap. Time chips are **Now / 10m / 20m / 1h**; tap **Exact** only if you need the clock picker.
 
 ### Sleep
 
-Sleep opens a sheet: start now, or save a finished nap with started and woke times. If a sleep timer is already running, the home Sleep button ends it. A leftover timer older than three hours shows a warning.
+Home **Sleep** starts a timer immediately. Tap it again to wake. To log a nap that already finished, tap the **Awake** glance card and save started/woke times (it prefills the last nap length). A leftover timer older than three hours shows a warning.
 
 ### Diaper, pump, temp, weight, note
 
-One sheet each. Pump is left and right volume. Tap a timeline row to edit time, notes, or delete (with undo).
+One sheet each. Pump, bottle, weight, and temperature start from the last values you logged. Tap a glance card (last feed / pump / diaper / sleep) to open that log. Tap a timeline row to edit time, amounts, notes, or delete. Every new log offers **Undo** on the toast.
+
+### Speak a log
+
+Home → **Speak**. On Chrome or Android the mic listens after the tap — try “wet diaper”, “start left”, “formula 90”, “sleep”, or “same as last”. If it hears you, the event saves and you can Undo. Home-screen iPhone apps cannot use live browser listening; type the phrase or use the keyboard microphone, then **Log it**. Chrome and Safari may send the audio to Apple or Google to turn it into words. The care event stays on this phone.
 
 ### Vitamin D and K
 
@@ -93,7 +97,7 @@ If you only have one phone, you can skip Sync entirely.
 
 ## What stays on the phone
 
-Default: events never leave the device. This Wi-Fi copies them over the local network after a short handshake. Crib video frames stay on the LAN and are not stored. The public passkey mailbox only carries WebRTC signaling, not feeds or video.
+Default: events never leave the device. This Wi-Fi copies them over the local network after a short handshake. Crib video frames stay on the LAN and are not stored. The public passkey mailbox only carries WebRTC signaling, not feeds or video. Speak a log may send a short utterance to Apple or Google for transcription when the browser listens; the saved event still stays on this phone.
 
 See [privacy.md](./privacy.md) for the longer argument.
 

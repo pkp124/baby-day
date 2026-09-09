@@ -13,29 +13,45 @@ import type {
   VitaminData,
   WeightData,
 } from "../lib/types";
-import { vitaminLabel } from "../lib/domain";
+import { milkSplit, vitaminLabel } from "../lib/domain";
 import { DurationChips, VolumeChips, WhenField } from "./Bits";
-import { displayToCelsius, displayToGrams, displayToMl, formatWeight, celsiusToDisplay } from "../lib/units";
-import { formatDuration, orderedInstants } from "../lib/time";
+import {
+  celsiusToDisplay,
+  displayToCelsius,
+  displayToGrams,
+  displayToMl,
+  formatMl,
+  gramsToDisplay,
+  mlToDisplay,
+} from "../lib/units";
+import { formatDuration, minutesAgoIso, orderedInstants } from "../lib/time";
 import { removeEvent, updateEvent } from "../lib/repo";
 
 export function FeedSheet({
   next,
   timezone,
+  unit,
+  lastBottle,
+  lastBreast,
   onBreast,
   onLogBreast,
   onPickBottle,
+  onRepeatLast,
 }: {
   next: BreastSide;
   timezone: string;
+  unit: Settings["volumeUnit"];
+  lastBottle?: { method: Extract<FeedMethod, "expressed" | "formula" | "mixed">; ml: number };
+  lastBreast?: { left: number; right: number };
   onBreast: (side: BreastSide, iso: string) => void;
   onLogBreast: (input: { startedOn: BreastSide; leftSeconds: number; rightSeconds: number; iso: string }) => void;
   onPickBottle: (method: Extract<FeedMethod, "expressed" | "formula" | "mixed">) => void;
+  onRepeatLast: (iso: string) => void;
 }) {
   const [whenIso, setWhenIso] = useState(() => new Date().toISOString());
   const [view, setView] = useState<"main" | "breast">("main");
-  const [leftMin, setLeftMin] = useState(10);
-  const [rightMin, setRightMin] = useState(10);
+  const [leftMin, setLeftMin] = useState(lastBreast?.left ?? 10);
+  const [rightMin, setRightMin] = useState(lastBreast?.right ?? 10);
   const [startedOn, setStartedOn] = useState<BreastSide>(next);
 
   if (view === "breast") {
@@ -90,19 +106,26 @@ export function FeedSheet({
     <>
       <h2>Feed</h2>
       <WhenField timezone={timezone} valueIso={whenIso} onChangeIso={setWhenIso} />
-      <div className="choices">
-        <button className={`choice ${next === "left" ? "hl" : ""}`} type="button" onClick={() => onBreast("left", whenIso)}>
+      <div className="choices sides">
+        <button className={`choice start ${next === "left" ? "hl" : ""}`} type="button" onClick={() => onBreast("left", whenIso)}>
           Start left
           {next === "left" ? <span className="faint">next</span> : null}
         </button>
-        <button className={`choice ${next === "right" ? "hl" : ""}`} type="button" onClick={() => onBreast("right", whenIso)}>
+        <button className={`choice start ${next === "right" ? "hl" : ""}`} type="button" onClick={() => onBreast("right", whenIso)}>
           Start right
           {next === "right" ? <span className="faint">next</span> : null}
         </button>
-        <button className="choice" type="button" onClick={() => setView("breast")}>
-          Log times on each breast
-          <span className="faint">after the fact</span>
-        </button>
+      </div>
+      <div className="choices">
+        {lastBottle && lastBottle.ml > 0 ? (
+          <button className="choice" type="button" onClick={() => onRepeatLast(whenIso)}>
+            Same as last
+            <span className="faint">
+              {formatMl(lastBottle.ml, unit)}{" "}
+              {lastBottle.method === "formula" ? "formula" : lastBottle.method === "expressed" ? "expressed" : "mixed"}
+            </span>
+          </button>
+        ) : null}
         <button className="choice" type="button" onClick={() => onPickBottle("formula")}>
           Formula bottle
         </button>
@@ -113,6 +136,9 @@ export function FeedSheet({
           Mixed / top-up later
         </button>
       </div>
+      <button className="ghost" type="button" onClick={() => setView("breast")}>
+        Log times on each breast
+      </button>
     </>
   );
 }
@@ -121,15 +147,17 @@ export function BottleSheet({
   method,
   unit,
   timezone,
+  lastAmount,
   onSave,
 }: {
   method: Extract<FeedMethod, "expressed" | "formula" | "mixed">;
   unit: Settings["volumeUnit"];
   timezone: string;
+  lastAmount?: number;
   onSave: (volumeDisplay: number, iso: string) => void;
 }) {
   const [whenIso, setWhenIso] = useState(() => new Date().toISOString());
-  const [amount, setAmount] = useState(unit === "oz" ? 2 : 60);
+  const [amount, setAmount] = useState(lastAmount ?? (unit === "oz" ? 2 : 60));
   const label = method === "formula" ? "Formula" : method === "expressed" ? "Expressed milk" : "Bottle top-up";
   return (
     <>
@@ -171,15 +199,19 @@ export function DiaperSheet({ timezone, onSave }: { timezone: string; onSave: (k
 export function PumpSheet({
   unit,
   timezone,
+  lastLeft,
+  lastRight,
   onSave,
 }: {
   unit: Settings["volumeUnit"];
   timezone: string;
+  lastLeft?: number;
+  lastRight?: number;
   onSave: (left: number, right: number, iso: string) => void;
 }) {
   const [whenIso, setWhenIso] = useState(() => new Date().toISOString());
-  const [left, setLeft] = useState(0);
-  const [right, setRight] = useState(0);
+  const [left, setLeft] = useState(lastLeft ?? 0);
+  const [right, setRight] = useState(lastRight ?? 0);
   return (
     <>
       <h2>Pump</h2>
@@ -204,14 +236,16 @@ export function PumpSheet({
 export function WeightSheet({
   unit,
   timezone,
+  lastGrams,
   onSave,
 }: {
   unit: Settings["weightUnit"];
   timezone: string;
+  lastGrams?: number;
   onSave: (grams: number, iso: string) => void;
 }) {
   const [whenIso, setWhenIso] = useState(() => new Date().toISOString());
-  const [value, setValue] = useState(unit === "lb" ? 7.5 : 3.4);
+  const [value, setValue] = useState(lastGrams != null ? gramsToDisplay(lastGrams, unit) : unit === "lb" ? 7.5 : 3.4);
   return (
     <>
       <h2>Weight</h2>
@@ -230,14 +264,16 @@ export function WeightSheet({
 export function TempSheet({
   unit,
   timezone,
+  lastCelsius,
   onSave,
 }: {
   unit: Settings["tempUnit"];
   timezone: string;
+  lastCelsius?: number;
   onSave: (celsius: number, iso: string) => void;
 }) {
   const [whenIso, setWhenIso] = useState(() => new Date().toISOString());
-  const [value, setValue] = useState(unit === "F" ? 98.6 : 37);
+  const [value, setValue] = useState(lastCelsius != null ? celsiusToDisplay(lastCelsius, unit) : unit === "F" ? 98.6 : 37);
   const presets = unit === "F" ? [97, 98.6, 99.5, 100.4, 101.3, 102.2] : [36.5, 37, 37.5, 38, 38.5, 39];
   const unitLabel = unit === "F" ? "°F" : "°C";
   return (
@@ -265,31 +301,40 @@ export function TempSheet({
 
 export function SleepSheet({
   timezone,
+  past = false,
+  lastNapMinutes,
   onStart,
   onLog,
 }: {
   timezone: string;
+  past?: boolean;
+  lastNapMinutes?: number;
   onStart: (iso: string) => void;
   onLog: (startIso: string, endIso: string) => void;
 }) {
-  const [startIso, setStartIso] = useState(() => new Date().toISOString());
+  const [startIso, setStartIso] = useState(() => (past ? minutesAgoIso(lastNapMinutes && lastNapMinutes > 0 ? lastNapMinutes : 30) : new Date().toISOString()));
   const [endIso, setEndIso] = useState(() => new Date().toISOString());
   const durationSec = (new Date(endIso).getTime() - new Date(startIso).getTime()) / 1000;
   return (
     <>
-      <h2>Sleep</h2>
+      <h2>{past ? "Log a nap" : "Sleep"}</h2>
       <WhenField timezone={timezone} valueIso={startIso} onChangeIso={setStartIso} label="Started" />
-      <button className="primary sleep grow" type="button" onClick={() => onStart(startIso)}>
-        Start sleep
-      </button>
-      <p className="muted sheet-split">
-        Or log a finished nap
-      </p>
+      {!past ? (
+        <button className="primary sleep grow" type="button" onClick={() => onStart(startIso)}>
+          Start sleep
+        </button>
+      ) : null}
+      <p className={past ? "muted" : "muted sheet-split"}>{past ? "When the baby woke." : "Or log a finished nap"}</p>
       <WhenField timezone={timezone} valueIso={endIso} onChangeIso={setEndIso} label="Woke" />
       {durationSec > 0 ? <p className="muted">{formatDuration(durationSec)}</p> : <p className="warn-text">Wake time needs to be after the start.</p>}
-      <button className="secondary" type="button" disabled={durationSec <= 0} onClick={() => onLog(startIso, endIso)}>
+      <button className={past ? "primary sleep grow" : "secondary"} type="button" disabled={durationSec <= 0} onClick={() => onLog(startIso, endIso)}>
         Save nap
       </button>
+      {past ? (
+        <button className="ghost" type="button" onClick={() => onStart(new Date().toISOString())}>
+          Start sleep now
+        </button>
+      ) : null}
     </>
   );
 }
@@ -357,9 +402,20 @@ export function EventEditor({
   const feed = event.type === "feed" ? (event.data as FeedData) : null;
   const [leftMin, setLeftMin] = useState(feed ? Math.round((feed.leftSeconds ?? 0) / 60) : 0);
   const [rightMin, setRightMin] = useState(feed ? Math.round((feed.rightSeconds ?? 0) / 60) : 0);
+  const milk = feed ? milkSplit(feed) : { formulaMl: 0, expressedMl: 0 };
+  const [formulaDisplay, setFormulaDisplay] = useState(mlToDisplay(milk.formulaMl, settings.volumeUnit));
+  const [expressedDisplay, setExpressedDisplay] = useState(mlToDisplay(milk.expressedMl, settings.volumeUnit));
   const temp = event.type === "temp" ? (event.data as TempData) : null;
   const [tempDisplay, setTempDisplay] = useState(temp ? celsiusToDisplay(temp.celsius, settings.tempUnit) : 0);
+  const weight = event.type === "weight" ? (event.data as WeightData) : null;
+  const [weightDisplay, setWeightDisplay] = useState(weight ? gramsToDisplay(weight.grams, settings.weightUnit) : 0);
+  const pump = event.type === "pump" ? (event.data as PumpData) : null;
+  const [pumpLeft, setPumpLeft] = useState(pump ? mlToDisplay(pump.leftMl ?? 0, settings.volumeUnit) : 0);
+  const [pumpRight, setPumpRight] = useState(pump ? mlToDisplay(pump.rightMl ?? 0, settings.volumeUnit) : 0);
+  const diaper = event.type === "diaper" ? (event.data as DiaperData) : null;
+  const [kind, setKind] = useState<DiaperKind>(diaper?.kind ?? "wet");
   const showBreastTimes = Boolean(feed && (feed.method === "breast" || feed.method === "mixed"));
+  const showBottleAmounts = Boolean(feed && feed.method !== "breast");
 
   async function save() {
     switch (event.type) {
@@ -388,6 +444,15 @@ export function EventEditor({
         } else {
           endedAt = whenIso;
         }
+        if (data.method !== "breast") {
+          const formulaMl = displayToMl(Math.max(0, formulaDisplay), settings.volumeUnit);
+          const expressedMl = displayToMl(Math.max(0, expressedDisplay), settings.volumeUnit);
+          data.formulaMl = formulaMl || undefined;
+          data.expressedMl = expressedMl || undefined;
+          data.volumeMl = formulaMl + expressedMl || undefined;
+          if (data.method === "formula") data.formulaMl = data.volumeMl;
+          if (data.method === "expressed") data.expressedMl = data.volumeMl;
+        }
         await updateEvent(event.id, { time: whenIso, endedAt, data });
         break;
       }
@@ -399,13 +464,25 @@ export function EventEditor({
         });
         break;
       case "weight":
-        await updateEvent(event.id, { time: whenIso, endedAt: whenIso, data: { ...(event.data as WeightData), note } });
+        await updateEvent(event.id, {
+          time: whenIso,
+          endedAt: whenIso,
+          data: { grams: displayToGrams(weightDisplay, settings.weightUnit), note },
+        });
         break;
       case "diaper":
-        await updateEvent(event.id, { time: whenIso, endedAt: whenIso, data: { ...(event.data as DiaperData), note } });
+        await updateEvent(event.id, { time: whenIso, endedAt: whenIso, data: { kind, note } });
         break;
       case "pump":
-        await updateEvent(event.id, { time: whenIso, endedAt: whenIso, data: { ...(event.data as PumpData), note } });
+        await updateEvent(event.id, {
+          time: whenIso,
+          endedAt: whenIso,
+          data: {
+            leftMl: displayToMl(Math.max(0, pumpLeft), settings.volumeUnit),
+            rightMl: displayToMl(Math.max(0, pumpRight), settings.volumeUnit),
+            note,
+          },
+        });
         break;
       case "vitaminD":
       case "vitaminK":
@@ -453,6 +530,22 @@ export function EventEditor({
           <DurationChips value={rightMin} onChange={setRightMin} />
         </>
       )}
+      {showBottleAmounts && (
+        <>
+          {(feed?.method === "formula" || feed?.method === "mixed") && (
+            <label className="field">
+              Formula ({settings.volumeUnit})
+              <input type="number" min={0} step={settings.volumeUnit === "oz" ? 0.5 : 5} value={formulaDisplay} onChange={(e) => setFormulaDisplay(Number(e.target.value))} />
+            </label>
+          )}
+          {(feed?.method === "expressed" || feed?.method === "mixed") && (
+            <label className="field">
+              Expressed ({settings.volumeUnit})
+              <input type="number" min={0} step={settings.volumeUnit === "oz" ? 0.5 : 5} value={expressedDisplay} onChange={(e) => setExpressedDisplay(Number(e.target.value))} />
+            </label>
+          )}
+        </>
+      )}
       {event.type === "feed" && (event.data as FeedData).method !== "formula" && (
         <div className="row" style={{ margin: "12px 0" }}>
           <button className="secondary grow" type="button" onClick={() => topUp(settings.volumeUnit === "oz" ? 1 : 30)}>
@@ -460,8 +553,45 @@ export function EventEditor({
           </button>
         </div>
       )}
+      {event.type === "diaper" && (
+        <div className="row" style={{ margin: "12px 0" }}>
+          {(["wet", "dirty", "both"] as const).map((option) => (
+            <button
+              key={option}
+              className={kind === option ? "primary grow" : "secondary grow"}
+              type="button"
+              onClick={() => setKind(option)}
+            >
+              {option === "both" ? "Wet + dirty" : option === "wet" ? "Wet" : "Dirty"}
+            </button>
+          ))}
+        </div>
+      )}
+      {event.type === "pump" && (
+        <>
+          <label className="field">
+            Left ({settings.volumeUnit})
+            <input type="number" min={0} value={pumpLeft} onChange={(e) => setPumpLeft(Number(e.target.value))} />
+          </label>
+          <VolumeChips value={pumpLeft} unitLabel={settings.volumeUnit} onChange={setPumpLeft} />
+          <label className="field">
+            Right ({settings.volumeUnit})
+            <input type="number" min={0} value={pumpRight} onChange={(e) => setPumpRight(Number(e.target.value))} />
+          </label>
+          <VolumeChips value={pumpRight} unitLabel={settings.volumeUnit} onChange={setPumpRight} />
+        </>
+      )}
       {event.type === "weight" && (
-        <p className="muted">{formatWeight((event.data as { grams: number }).grams, settings.weightUnit)}</p>
+        <label className="field">
+          Weight ({settings.weightUnit})
+          <input
+            type="number"
+            min={0}
+            step={settings.weightUnit === "lb" ? 0.1 : 0.01}
+            value={weightDisplay}
+            onChange={(e) => setWeightDisplay(Number(e.target.value))}
+          />
+        </label>
       )}
       {event.type === "temp" && (
         <label className="field">

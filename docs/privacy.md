@@ -74,6 +74,12 @@ Until C exists, connecting Supabase would upload plaintext. The UI should keep s
 
 On-device IndexedDB keeps every care event until you delete it. There is no rolling expiry. Volume is small (tens of thousands of events is still a few megabytes). The real risk is Safari evicting site data, not filling the disk. JSON export is the backup. Settings can optionally tombstone finished events older than 90 days, 1 year, or 2 years; that delete follows LAN sync to the other phone.
 
+## Voice logging
+
+Speak a log does **not** upload a recording to Baby Day or store audio. If the browser can listen (Chrome, Android, Safari in the tab), it may send that short utterance to Apple or Google to turn it into words — that is the Web Speech API, not our server. The parsed event is then saved in IndexedDB like any other tap. Home-screen iPhone apps cannot use that API; those parents type or use the keyboard microphone, and nothing is sent for transcription by the app.
+
+This is not cry analysis, and it is not a baby monitor.
+
 ## What not to do
 
 - Put events in a git repo, gist, or issue. History never forgets.
